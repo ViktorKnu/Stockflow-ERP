@@ -6,7 +6,7 @@ Siste push på `main` inneholder prosjektgrunnmuren: Spring Boot, Docker, Postgr
 
 ## Start her
 
-Alle kommandoer under kjøres fra prosjektmappen:
+Alle kommandoer under kjøres fra prosjektmappen. I mitt tilfelle:
 
 ```powershell
 cd C:\Users\vikto\Downloads\Github\Stockflow-ERP
