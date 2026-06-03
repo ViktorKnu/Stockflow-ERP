@@ -2,7 +2,7 @@
 
 StockFlow ERP er en produksjonsnær inventory-, ordre- og finansiell ledger-API for bedrifter. Prosjektet bygges med Java 21, Spring Boot, PostgreSQL og Docker, og er laget for å vise solid backend-arbeid: ren arkitektur, domenelogikk, transaksjoner, database-migrasjoner, testing, dokumentasjon og CI/CD.
 
-Siste push på `main` inneholder prosjektgrunnmuren: Spring Boot, Docker, PostgreSQL, OpenAPI, Actuator og global feilhåndtering. Supplier- og Product-modulene kommer i de neste små commitene.
+Siste push på `main` inneholder prosjektgrunnmuren og leverandør-API-et: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering og Supplier CRUD. Product-modulen kommer i neste små commit.
 
 ## Start her
 
@@ -178,7 +178,7 @@ Start med pgAdmin:
 docker compose --profile tools up --build
 ```
 
-## Teste API-funksjonalitet
+## Teste leverandør-API
 
 Den enkleste måten å teste API-et på er Swagger:
 
@@ -189,7 +189,17 @@ Den enkleste måten å teste API-et på er Swagger:
 5. Fyll inn request body hvis endepunktet krever det
 6. Trykk `Execute`
 
-Etter Supplier-commiten kan du opprette en leverandør med:
+Tilgjengelige leverandør-endepunkter:
+
+```text
+GET    /api/suppliers
+GET    /api/suppliers/{id}
+POST   /api/suppliers
+PUT    /api/suppliers/{id}
+DELETE /api/suppliers/{id}
+```
+
+Opprett en leverandør med `POST /api/suppliers`:
 
 ```json
 {
@@ -197,21 +207,6 @@ Etter Supplier-commiten kan du opprette en leverandør med:
   "email": "orders@nordic.example",
   "phone": "+47 22 00 00 00",
   "address": "Oslo"
-}
-```
-
-Etter Product-commiten kan du opprette et produkt med:
-
-```json
-{
-  "name": "Barcode Scanner",
-  "sku": "SCAN-001",
-  "description": "USB barcode scanner for warehouse use",
-  "category": "Hardware",
-  "quantity": 12,
-  "minimumStock": 3,
-  "price": 799.00,
-  "supplierId": 1
 }
 ```
 
@@ -234,23 +229,49 @@ $body = @{
 Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/suppliers -ContentType "application/json" -Body $body
 ```
 
+Hent alle leverandører:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/suppliers
+```
+
+Oppdater leverandør med id `1`:
+
+```powershell
+$body = @{
+  name = "Nordic Supplies Norge AS"
+  email = "sales@nordic.example"
+  phone = "+47 22 00 00 01"
+  address = "Bergen"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Put -Uri http://localhost:8080/api/suppliers/1 -ContentType "application/json" -Body $body
+```
+
+Slett leverandør med id `1`:
+
+```powershell
+Invoke-RestMethod -Method Delete -Uri http://localhost:8080/api/suppliers/1
+```
+
 ## Status nå
 
 - Maven-basert Spring Boot-prosjekt med Java 21
 - Feature-basert pakkestruktur under `com.stockflow`
-- PostgreSQL-konfigurasjon
+- PostgreSQL-konfigurasjon med Flyway-migrasjon
 - Dockerfile og Docker Compose med app, database og valgfri pgAdmin-profil
 - Swagger/OpenAPI på `/swagger-ui.html`
 - Actuator health endpoint på `/actuator/health`
 - Global exception handler med valideringsfeil
 - GitHub Actions workflow for test og build
+- Supplier CRUD
+- DTO-er for all API input/output
 
 ## Kommer i fase 2
 
-- Flyway-migrasjon for Supplier og Product
 - Product CRUD, søk, kategori-filter og low-stock-endepunkt
-- Supplier CRUD og endepunkt for produkter per leverandør
-- DTO-er for all API input/output
+- Kobling mellom Product og Supplier
+- Endepunkt for produkter per leverandør
 - Unit-tester for ProductService og SupplierService
 
 ## Teknologistack
@@ -287,15 +308,23 @@ Hver modul eier egne entity-klasser, repositories, services, controllers, DTO-er
 
 ## Domenemodell nå
 
-Foundation-commiten har ingen business-entities ennå. Den verifiserer at app, database, Swagger, Actuator og global feilhåndtering starter riktig.
+`Supplier` representerer leverandører som kan levere produkter til bedriften. Modulen har egen entity, repository, service, controller, request DTO-er og response DTO.
 
 ## Domenemodell i neste commits
 
-`Supplier` skal representere leverandører som kan være koblet til produkter.
-
 `Product` skal representere varer bedriften kjøper, lagrer og selger. SKU er unik, lagerbeholdning og minimumslager kan ikke være negative, pris må være positiv, og `Product` får `@Version` for optimistisk låsing før inventory-fasen.
 
-## API-oversikt etter fase 2
+## API-oversikt nå
+
+Leverandører:
+
+- `GET /api/suppliers`
+- `GET /api/suppliers/{id}`
+- `POST /api/suppliers`
+- `PUT /api/suppliers/{id}`
+- `DELETE /api/suppliers/{id}`
+
+## API-oversikt i neste commit
 
 Produkter:
 
@@ -307,15 +336,6 @@ Produkter:
 - `GET /api/products/search?name=`
 - `GET /api/products/low-stock`
 - `GET /api/products/category/{category}`
-
-Leverandører:
-
-- `GET /api/suppliers`
-- `GET /api/suppliers/{id}`
-- `POST /api/suppliers`
-- `PUT /api/suppliers/{id}`
-- `DELETE /api/suppliers/{id}`
-- `GET /api/suppliers/{id}/products`
 
 ## Kjøre lokalt
 
