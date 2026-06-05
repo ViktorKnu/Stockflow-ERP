@@ -2,7 +2,7 @@
 
 StockFlow ERP er en produksjonsnær inventory-, ordre- og finansiell ledger-API for bedrifter. Prosjektet bygges med Java 21, Spring Boot, PostgreSQL og Docker, og er laget for å vise solid backend-arbeid: ren arkitektur, domenelogikk, transaksjoner, database-migrasjoner, testing, dokumentasjon og CI/CD.
 
-Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et og produkt-API-et: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD og Product CRUD.
+Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et og lagerbevegelser: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD og Inventory Movement workflow.
 
 ## Start her
 
@@ -343,6 +343,81 @@ Hent produkter for leverandør med id `1`:
 Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/suppliers/1/products
 ```
 
+## Teste lagerbevegelser
+
+Lagerbevegelser er den første ordentlige business-workflowen. Når du oppretter en lagerbevegelse, oppdateres produktets `quantity` og systemet lagrer `previousQuantity` og `newQuantity` for sporbarhet.
+
+Tilgjengelige lager-endepunkter:
+
+```text
+POST /api/inventory/movements
+GET  /api/inventory/movements
+GET  /api/inventory/movements/{id}
+GET  /api/inventory/movements/product/{productId}
+```
+
+Bevegelsestyper:
+
+```text
+IN          øker lagerbeholdning
+OUT         senker lagerbeholdning
+ADJUSTMENT  setter lagerbeholdning til oppgitt quantity
+```
+
+Eksempel: legg 5 varer inn på lager for produkt med id `1`:
+
+```json
+{
+  "productId": 1,
+  "type": "IN",
+  "quantity": 5,
+  "reason": "Supplier delivery"
+}
+```
+
+Eksempel: ta 3 varer ut av lager:
+
+```json
+{
+  "productId": 1,
+  "type": "OUT",
+  "quantity": 3,
+  "reason": "Customer order shipped"
+}
+```
+
+Eksempel: manuell lagerjustering til 20:
+
+```json
+{
+  "productId": 1,
+  "type": "ADJUSTMENT",
+  "quantity": 20,
+  "reason": "Manual stock count"
+}
+```
+
+PowerShell-eksempel:
+
+```powershell
+$body = @{
+  productId = 1
+  type = "OUT"
+  quantity = 3
+  reason = "Customer order shipped"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/inventory/movements -ContentType "application/json" -Body $body
+```
+
+Hent bevegelser for produkt med id `1`:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/inventory/movements/product/1
+```
+
+Systemet stopper `OUT` hvis bevegelsen ville gitt negativ lagerbeholdning.
+
 ## Status nå
 
 - Maven-basert Spring Boot-prosjekt med Java 21
@@ -358,11 +433,16 @@ Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/suppliers/1/product
 - Produktsøk, kategorifilter og low-stock-endepunkt
 - Kobling mellom Product og Supplier
 - Endepunkt for produkter per leverandør
+- Lagerbevegelser med IN, OUT og ADJUSTMENT
+- Transaksjonell oppdatering av produktbeholdning
+- Sporbarhet med previousQuantity og newQuantity
 - DTO-er for all API input/output
 
-## Kommer i fase 2
+## Kommer videre
 
-- Flere tester rundt Product og Supplier
+- Innkjøpsordre med mottak av varer
+- Ledger-postering for innkjøp
+- Audit log for viktige workflows
 
 ## Teknologistack
 
@@ -402,6 +482,8 @@ Hver modul eier egne entity-klasser, repositories, services, controllers, DTO-er
 
 `Product` representerer varer bedriften kjøper, lagrer og selger. SKU er unik, lagerbeholdning og minimumslager kan ikke være negative, pris må være positiv, og `Product` har `@Version` for optimistisk låsing før inventory-fasen.
 
+`InventoryMovement` representerer alle lagerendringer. Hver bevegelse peker på et produkt, har type `IN`, `OUT` eller `ADJUSTMENT`, og lagrer både tidligere og ny lagerbeholdning.
+
 ## API-oversikt nå
 
 Leverandører:
@@ -423,6 +505,13 @@ Produkter:
 - `GET /api/products/search?name=`
 - `GET /api/products/low-stock`
 - `GET /api/products/category/{category}`
+
+Lagerbevegelser:
+
+- `POST /api/inventory/movements`
+- `GET /api/inventory/movements`
+- `GET /api/inventory/movements/{id}`
+- `GET /api/inventory/movements/product/{productId}`
 
 ## Kjøre lokalt
 
