@@ -1,5 +1,6 @@
 package com.stockflow.supplier;
 
+import com.stockflow.product.dto.ProductResponse;
 import com.stockflow.supplier.dto.SupplierCreateRequest;
 import com.stockflow.supplier.dto.SupplierResponse;
 import com.stockflow.supplier.dto.SupplierUpdateRequest;
@@ -56,5 +57,11 @@ public class SupplierController {
     @Operation(summary = "Delete supplier")
     public void delete(@PathVariable Long id) {
         supplierService.delete(id);
+    }
+
+    @GetMapping("/{id}/products")
+    @Operation(summary = "List products connected to supplier")
+    public List<ProductResponse> findProducts(@PathVariable Long id) {
+        return supplierService.findProducts(id);
     }
 }

@@ -1,6 +1,8 @@
 package com.stockflow.supplier;
 
+import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ResourceNotFoundException;
+import com.stockflow.product.ProductRepository;
 import com.stockflow.supplier.dto.SupplierCreateRequest;
 import com.stockflow.supplier.dto.SupplierResponse;
 import com.stockflow.supplier.dto.SupplierUpdateRequest;
@@ -24,6 +26,9 @@ class SupplierServiceTest {
 
     @Mock
     private SupplierRepository supplierRepository;
+
+    @Mock
+    private ProductRepository productRepository;
 
     @InjectMocks
     private SupplierService supplierService;
@@ -92,10 +97,22 @@ class SupplierServiceTest {
     void canDeleteSupplier() {
         Supplier supplier = supplier();
         when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
+        when(productRepository.existsBySupplierId(1L)).thenReturn(false);
 
         supplierService.delete(1L);
 
         verify(supplierRepository).delete(supplier);
+    }
+
+    @Test
+    void cannotDeleteSupplierWithProducts() {
+        Supplier supplier = supplier();
+        when(supplierRepository.findById(1L)).thenReturn(Optional.of(supplier));
+        when(productRepository.existsBySupplierId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> supplierService.delete(1L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("products depend on it");
     }
 
     private Supplier supplier() {

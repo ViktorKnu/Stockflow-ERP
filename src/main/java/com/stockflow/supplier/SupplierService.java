@@ -1,6 +1,10 @@
 package com.stockflow.supplier;
 
+import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ResourceNotFoundException;
+import com.stockflow.product.ProductMapper;
+import com.stockflow.product.ProductRepository;
+import com.stockflow.product.dto.ProductResponse;
 import com.stockflow.supplier.dto.SupplierCreateRequest;
 import com.stockflow.supplier.dto.SupplierResponse;
 import com.stockflow.supplier.dto.SupplierUpdateRequest;
@@ -15,6 +19,7 @@ import java.util.List;
 public class SupplierService {
 
     private final SupplierRepository supplierRepository;
+    private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
     public List<SupplierResponse> findAll() {
@@ -53,7 +58,18 @@ public class SupplierService {
     @Transactional
     public void delete(Long id) {
         Supplier supplier = getSupplier(id);
+        if (productRepository.existsBySupplierId(id)) {
+            throw new BusinessRuleException("Supplier cannot be deleted while products depend on it");
+        }
         supplierRepository.delete(supplier);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> findProducts(Long id) {
+        getSupplier(id);
+        return productRepository.findBySupplierId(id).stream()
+                .map(ProductMapper::toResponse)
+                .toList();
     }
 
     private Supplier getSupplier(Long id) {

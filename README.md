@@ -2,7 +2,7 @@
 
 StockFlow ERP er en produksjonsnær inventory-, ordre- og finansiell ledger-API for bedrifter. Prosjektet bygges med Java 21, Spring Boot, PostgreSQL og Docker, og er laget for å vise solid backend-arbeid: ren arkitektur, domenelogikk, transaksjoner, database-migrasjoner, testing, dokumentasjon og CI/CD.
 
-Siste push på `main` inneholder prosjektgrunnmuren og leverandør-API-et: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering og Supplier CRUD. Product-modulen kommer i neste små commit.
+Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et og produkt-API-et: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD og Product CRUD.
 
 ## Start her
 
@@ -197,6 +197,7 @@ GET    /api/suppliers/{id}
 POST   /api/suppliers
 PUT    /api/suppliers/{id}
 DELETE /api/suppliers/{id}
+GET    /api/suppliers/{id}/products
 ```
 
 Opprett en leverandør med `POST /api/suppliers`:
@@ -254,6 +255,94 @@ Slett leverandør med id `1`:
 Invoke-RestMethod -Method Delete -Uri http://localhost:8080/api/suppliers/1
 ```
 
+## Teste produkt-API
+
+Produkter kan opprettes alene eller kobles til en leverandør med `supplierId`. Start med å opprette en leverandør, og bruk deretter `id` fra responsen når du lager produktet.
+
+Tilgjengelige produkt-endepunkter:
+
+```text
+GET    /api/products
+GET    /api/products/{id}
+POST   /api/products
+PUT    /api/products/{id}
+DELETE /api/products/{id}
+GET    /api/products/search?name=
+GET    /api/products/low-stock
+GET    /api/products/category/{category}
+```
+
+Opprett et produkt med `POST /api/products`:
+
+```json
+{
+  "name": "Barcode Scanner",
+  "sku": "SCAN-001",
+  "description": "USB barcode scanner for warehouse use",
+  "category": "Hardware",
+  "quantity": 12,
+  "minimumStock": 3,
+  "price": 799.00,
+  "supplierId": 1
+}
+```
+
+Lag et low-stock-produkt:
+
+```json
+{
+  "name": "Receipt Paper",
+  "sku": "PAPER-001",
+  "description": "Thermal receipt paper rolls",
+  "category": "Office",
+  "quantity": 2,
+  "minimumStock": 5,
+  "price": 29.00,
+  "supplierId": 1
+}
+```
+
+Test med PowerShell:
+
+```powershell
+$body = @{
+  name = "Barcode Scanner"
+  sku = "SCAN-001"
+  description = "USB barcode scanner for warehouse use"
+  category = "Hardware"
+  quantity = 12
+  minimumStock = 3
+  price = 799.00
+  supplierId = 1
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/products -ContentType "application/json" -Body $body
+```
+
+Hent alle produkter:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/products
+```
+
+Søk etter produktnavn:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri "http://localhost:8080/api/products/search?name=barcode"
+```
+
+Hent low-stock-produkter:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/products/low-stock
+```
+
+Hent produkter for leverandør med id `1`:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/suppliers/1/products
+```
+
 ## Status nå
 
 - Maven-basert Spring Boot-prosjekt med Java 21
@@ -265,14 +354,15 @@ Invoke-RestMethod -Method Delete -Uri http://localhost:8080/api/suppliers/1
 - Global exception handler med valideringsfeil
 - GitHub Actions workflow for test og build
 - Supplier CRUD
+- Product CRUD
+- Produktsøk, kategorifilter og low-stock-endepunkt
+- Kobling mellom Product og Supplier
+- Endepunkt for produkter per leverandør
 - DTO-er for all API input/output
 
 ## Kommer i fase 2
 
-- Product CRUD, søk, kategori-filter og low-stock-endepunkt
-- Kobling mellom Product og Supplier
-- Endepunkt for produkter per leverandør
-- Unit-tester for ProductService og SupplierService
+- Flere tester rundt Product og Supplier
 
 ## Teknologistack
 
@@ -310,9 +400,7 @@ Hver modul eier egne entity-klasser, repositories, services, controllers, DTO-er
 
 `Supplier` representerer leverandører som kan levere produkter til bedriften. Modulen har egen entity, repository, service, controller, request DTO-er og response DTO.
 
-## Domenemodell i neste commits
-
-`Product` skal representere varer bedriften kjøper, lagrer og selger. SKU er unik, lagerbeholdning og minimumslager kan ikke være negative, pris må være positiv, og `Product` får `@Version` for optimistisk låsing før inventory-fasen.
+`Product` representerer varer bedriften kjøper, lagrer og selger. SKU er unik, lagerbeholdning og minimumslager kan ikke være negative, pris må være positiv, og `Product` har `@Version` for optimistisk låsing før inventory-fasen.
 
 ## API-oversikt nå
 
@@ -323,8 +411,7 @@ Leverandører:
 - `POST /api/suppliers`
 - `PUT /api/suppliers/{id}`
 - `DELETE /api/suppliers/{id}`
-
-## API-oversikt i neste commit
+- `GET /api/suppliers/{id}/products`
 
 Produkter:
 
