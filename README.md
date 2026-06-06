@@ -2,7 +2,7 @@
 
 StockFlow ERP er en produksjonsnær inventory-, ordre- og finansiell ledger-API for bedrifter. Prosjektet bygges med Java 21, Spring Boot, PostgreSQL og Docker, og er laget for å vise solid backend-arbeid: ren arkitektur, domenelogikk, transaksjoner, database-migrasjoner, testing, dokumentasjon og CI/CD.
 
-Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et og lagerbevegelser: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD og Inventory Movement workflow.
+Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et, lagerbevegelser og innkjøpsordre: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD, Inventory Movement workflow og Purchase Order workflow.
 
 ## Start her
 
@@ -418,6 +418,73 @@ Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/inventory/movements
 
 Systemet stopper `OUT` hvis bevegelsen ville gitt negativ lagerbeholdning.
 
+## Teste innkjøpsordre
+
+Innkjøpsordre lar deg registrere varer som skal kjøpes fra en leverandør. I denne fasen kan du opprette ordre, legge til ordrelinjer, beregne totalbeløp og endre status til `ORDERED` eller `CANCELLED`. Mottak av varer kommer i neste commit.
+
+Tilgjengelige innkjøpsordre-endepunkter:
+
+```text
+GET    /api/purchase-orders
+GET    /api/purchase-orders/{id}
+POST   /api/purchase-orders
+POST   /api/purchase-orders/{id}/items
+PUT    /api/purchase-orders/{id}/status
+DELETE /api/purchase-orders/{id}
+```
+
+Opprett en innkjøpsordre for leverandør med id `1`:
+
+```json
+{
+  "supplierId": 1
+}
+```
+
+Legg til produkt med id `1` på innkjøpsordre med id `1`:
+
+```json
+{
+  "productId": 1,
+  "quantity": 5,
+  "unitPrice": 699.00
+}
+```
+
+Responsen skal vise `lineTotal` og oppdatert `totalAmount`.
+
+Sett ordrestatus til `ORDERED`:
+
+```json
+{
+  "status": "ORDERED"
+}
+```
+
+PowerShell-eksempel:
+
+```powershell
+$orderBody = @{
+  supplierId = 1
+} | ConvertTo-Json
+
+$order = Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/purchase-orders -ContentType "application/json" -Body $orderBody
+
+$itemBody = @{
+  productId = 1
+  quantity = 5
+  unitPrice = 699.00
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/purchase-orders/$($order.id)/items" -ContentType "application/json" -Body $itemBody
+```
+
+Hent alle innkjøpsordre:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/purchase-orders
+```
+
 ## Status nå
 
 - Maven-basert Spring Boot-prosjekt med Java 21
@@ -436,11 +503,12 @@ Systemet stopper `OUT` hvis bevegelsen ville gitt negativ lagerbeholdning.
 - Lagerbevegelser med IN, OUT og ADJUSTMENT
 - Transaksjonell oppdatering av produktbeholdning
 - Sporbarhet med previousQuantity og newQuantity
+- Innkjøpsordre med ordrelinjer og totalberegning
 - DTO-er for all API input/output
 
 ## Kommer videre
 
-- Innkjøpsordre med mottak av varer
+- Mottak av innkjøpsordre
 - Ledger-postering for innkjøp
 - Audit log for viktige workflows
 
@@ -484,6 +552,8 @@ Hver modul eier egne entity-klasser, repositories, services, controllers, DTO-er
 
 `InventoryMovement` representerer alle lagerendringer. Hver bevegelse peker på et produkt, har type `IN`, `OUT` eller `ADJUSTMENT`, og lagrer både tidligere og ny lagerbeholdning.
 
+`PurchaseOrder` representerer varer som bestilles fra en leverandør. En ordre kan ha flere `PurchaseOrderItem`-linjer, og totalbeløpet beregnes fra linjene.
+
 ## API-oversikt nå
 
 Leverandører:
@@ -512,6 +582,15 @@ Lagerbevegelser:
 - `GET /api/inventory/movements`
 - `GET /api/inventory/movements/{id}`
 - `GET /api/inventory/movements/product/{productId}`
+
+Innkjøpsordre:
+
+- `GET /api/purchase-orders`
+- `GET /api/purchase-orders/{id}`
+- `POST /api/purchase-orders`
+- `POST /api/purchase-orders/{id}/items`
+- `PUT /api/purchase-orders/{id}/status`
+- `DELETE /api/purchase-orders/{id}`
 
 ## Kjøre lokalt
 
