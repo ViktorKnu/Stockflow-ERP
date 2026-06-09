@@ -1,6 +1,8 @@
 package com.stockflow.purchaseorder;
 
 import com.stockflow.exception.BusinessRuleException;
+import com.stockflow.inventory.InventoryMovementService;
+import com.stockflow.inventory.MovementType;
 import com.stockflow.product.Product;
 import com.stockflow.product.ProductRepository;
 import com.stockflow.purchaseorder.dto.PurchaseOrderCreateRequest;
@@ -22,6 +24,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +41,9 @@ class PurchaseOrderServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private InventoryMovementService inventoryMovementService;
 
     @InjectMocks
     private PurchaseOrderService purchaseOrderService;
@@ -138,6 +147,71 @@ class PurchaseOrderServiceTest {
                 .hasMessageContaining("receive workflow");
     }
 
+    @Test
+    void receivingPurchaseOrderIncreasesStockAndMarksOrderAsReceived() {
+        Product product = product();
+        PurchaseOrder order = orderedPurchaseOrder(product, 4);
+        when(purchaseOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+        when(inventoryMovementService.recordMovement(
+                same(product),
+                eq(MovementType.IN),
+                eq(4),
+                eq("Purchase order received: 10")
+        )).thenAnswer(invocation -> {
+            product.setQuantity(product.getQuantity() + 4);
+            return null;
+        });
+
+        PurchaseOrderResponse response = purchaseOrderService.receive(10L);
+
+        assertThat(response.status()).isEqualTo(PurchaseOrderStatus.RECEIVED);
+        assertThat(product.getQuantity()).isEqualTo(14);
+        verify(inventoryMovementService).recordMovement(
+                same(product),
+                eq(MovementType.IN),
+                eq(4),
+                eq("Purchase order received: 10")
+        );
+    }
+
+    @Test
+    void cannotReceivePurchaseOrderTwice() {
+        PurchaseOrder order = orderedPurchaseOrder(product(), 4);
+        order.setStatus(PurchaseOrderStatus.RECEIVED);
+        when(purchaseOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> purchaseOrderService.receive(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("already been received");
+
+        verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+    }
+
+    @Test
+    void cannotReceiveCancelledPurchaseOrder() {
+        PurchaseOrder order = orderedPurchaseOrder(product(), 4);
+        order.setStatus(PurchaseOrderStatus.CANCELLED);
+        when(purchaseOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> purchaseOrderService.receive(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("Cancelled");
+
+        verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+    }
+
+    @Test
+    void cannotReceiveDraftPurchaseOrder() {
+        PurchaseOrder order = purchaseOrder();
+        when(purchaseOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> purchaseOrderService.receive(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("ORDERED");
+
+        verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+    }
+
     private PurchaseOrder purchaseOrder() {
         return PurchaseOrder.builder()
                 .id(10L)
@@ -146,6 +220,18 @@ class PurchaseOrderServiceTest {
                 .totalAmount(BigDecimal.ZERO)
                 .items(new ArrayList<>())
                 .build();
+    }
+
+    private PurchaseOrder orderedPurchaseOrder(Product product, int quantity) {
+        PurchaseOrder order = purchaseOrder();
+        order.addItem(PurchaseOrderItem.builder()
+                .product(product)
+                .quantity(quantity)
+                .unitPrice(new BigDecimal("100.00"))
+                .lineTotal(BigDecimal.valueOf(quantity).multiply(new BigDecimal("100.00")))
+                .build());
+        order.setStatus(PurchaseOrderStatus.ORDERED);
+        return order;
     }
 
     private Supplier supplier() {

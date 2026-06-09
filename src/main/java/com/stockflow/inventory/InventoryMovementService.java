@@ -24,16 +24,21 @@ public class InventoryMovementService {
         Product product = productRepository.findById(request.productId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + request.productId()));
 
+        return recordMovement(product, request.type(), request.quantity(), request.reason());
+    }
+
+    @Transactional
+    public InventoryMovementResponse recordMovement(Product product, MovementType type, Integer quantity, String reason) {
         Integer previousQuantity = product.getQuantity();
-        Integer newQuantity = calculateNewQuantity(previousQuantity, request.type(), request.quantity());
+        Integer newQuantity = calculateNewQuantity(previousQuantity, type, quantity);
 
         product.setQuantity(newQuantity);
 
         InventoryMovement movement = InventoryMovement.builder()
                 .product(product)
-                .type(request.type())
-                .quantity(request.quantity())
-                .reason(request.reason())
+                .type(type)
+                .quantity(quantity)
+                .reason(reason)
                 .previousQuantity(previousQuantity)
                 .newQuantity(newQuantity)
                 .build();

@@ -60,6 +60,12 @@ public class PurchaseOrderController {
         return purchaseOrderService.updateStatus(id, request);
     }
 
+    @PostMapping("/{id}/receive")
+    @Operation(summary = "Receive purchase order and increase stock")
+    public PurchaseOrderResponse receive(@PathVariable Long id) {
+        return purchaseOrderService.receive(id);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete purchase order")

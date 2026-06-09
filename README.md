@@ -2,7 +2,7 @@
 
 StockFlow ERP er en produksjonsnær inventory-, ordre- og finansiell ledger-API for bedrifter. Prosjektet bygges med Java 21, Spring Boot, PostgreSQL og Docker, og er laget for å vise solid backend-arbeid: ren arkitektur, domenelogikk, transaksjoner, database-migrasjoner, testing, dokumentasjon og CI/CD.
 
-Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et, lagerbevegelser og innkjøpsordre: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD, Inventory Movement workflow og Purchase Order workflow.
+Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et, lagerbevegelser og innkjøpsordre med mottak: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD, Inventory Movement workflow og Purchase Order receiving workflow.
 
 ## Start her
 
@@ -420,7 +420,7 @@ Systemet stopper `OUT` hvis bevegelsen ville gitt negativ lagerbeholdning.
 
 ## Teste innkjøpsordre
 
-Innkjøpsordre lar deg registrere varer som skal kjøpes fra en leverandør. I denne fasen kan du opprette ordre, legge til ordrelinjer, beregne totalbeløp og endre status til `ORDERED` eller `CANCELLED`. Mottak av varer kommer i neste commit.
+Innkjøpsordre lar deg registrere varer som skal kjøpes fra en leverandør. Du kan opprette ordre, legge til ordrelinjer, beregne totalbeløp, endre status til `ORDERED` eller `CANCELLED`, og motta bestilte varer inn på lager.
 
 Tilgjengelige innkjøpsordre-endepunkter:
 
@@ -430,6 +430,7 @@ GET    /api/purchase-orders/{id}
 POST   /api/purchase-orders
 POST   /api/purchase-orders/{id}/items
 PUT    /api/purchase-orders/{id}/status
+POST   /api/purchase-orders/{id}/receive
 DELETE /api/purchase-orders/{id}
 ```
 
@@ -461,6 +462,19 @@ Sett ordrestatus til `ORDERED`:
 }
 ```
 
+Motta ordren når varene kommer inn:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/purchase-orders/1/receive
+```
+
+Da skjer dette i én transaksjon:
+
+- Ordren får status `RECEIVED`
+- Produktbeholdningen øker med antallet i ordrelinjene
+- Det opprettes en `InventoryMovement` av type `IN` for hver ordrelinje
+- Samme ordre kan ikke mottas to ganger
+
 PowerShell-eksempel:
 
 ```powershell
@@ -477,6 +491,14 @@ $itemBody = @{
 } | ConvertTo-Json
 
 Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/purchase-orders/$($order.id)/items" -ContentType "application/json" -Body $itemBody
+
+$statusBody = @{
+  status = "ORDERED"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Put -Uri "http://localhost:8080/api/purchase-orders/$($order.id)/status" -ContentType "application/json" -Body $statusBody
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/purchase-orders/$($order.id)/receive"
 ```
 
 Hent alle innkjøpsordre:
@@ -504,11 +526,11 @@ Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/purchase-orders
 - Transaksjonell oppdatering av produktbeholdning
 - Sporbarhet med previousQuantity og newQuantity
 - Innkjøpsordre med ordrelinjer og totalberegning
+- Mottak av innkjøpsordre som øker lager og lager IN-bevegelser
 - DTO-er for all API input/output
 
 ## Kommer videre
 
-- Mottak av innkjøpsordre
 - Ledger-postering for innkjøp
 - Audit log for viktige workflows
 
@@ -553,6 +575,7 @@ Hver modul eier egne entity-klasser, repositories, services, controllers, DTO-er
 `InventoryMovement` representerer alle lagerendringer. Hver bevegelse peker på et produkt, har type `IN`, `OUT` eller `ADJUSTMENT`, og lagrer både tidligere og ny lagerbeholdning.
 
 `PurchaseOrder` representerer varer som bestilles fra en leverandør. En ordre kan ha flere `PurchaseOrderItem`-linjer, og totalbeløpet beregnes fra linjene.
+Når en innkjøpsordre mottas, øker systemet lagerbeholdningen og oppretter `InventoryMovement`-poster av type `IN`.
 
 ## API-oversikt nå
 
@@ -590,6 +613,7 @@ Innkjøpsordre:
 - `POST /api/purchase-orders`
 - `POST /api/purchase-orders/{id}/items`
 - `PUT /api/purchase-orders/{id}/status`
+- `POST /api/purchase-orders/{id}/receive`
 - `DELETE /api/purchase-orders/{id}`
 
 ## Kjøre lokalt
