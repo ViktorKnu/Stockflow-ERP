@@ -3,6 +3,8 @@ package com.stockflow.purchaseorder;
 import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.inventory.InventoryMovementService;
 import com.stockflow.inventory.MovementType;
+import com.stockflow.ledger.LedgerService;
+import com.stockflow.ledger.LedgerSourceType;
 import com.stockflow.product.Product;
 import com.stockflow.product.ProductRepository;
 import com.stockflow.purchaseorder.dto.PurchaseOrderCreateRequest;
@@ -44,6 +46,9 @@ class PurchaseOrderServiceTest {
 
     @Mock
     private InventoryMovementService inventoryMovementService;
+
+    @Mock
+    private LedgerService ledgerService;
 
     @InjectMocks
     private PurchaseOrderService purchaseOrderService;
@@ -172,6 +177,12 @@ class PurchaseOrderServiceTest {
                 eq(4),
                 eq("Purchase order received: 10")
         );
+        verify(ledgerService).recordExpense(
+                eq(new BigDecimal("400.00")),
+                eq("Purchase order received: 10"),
+                eq(LedgerSourceType.PURCHASE_ORDER),
+                eq(10L)
+        );
     }
 
     @Test
@@ -185,6 +196,7 @@ class PurchaseOrderServiceTest {
                 .hasMessageContaining("already been received");
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(ledgerService, never()).recordExpense(any(), any(), any(), any());
     }
 
     @Test
@@ -198,6 +210,7 @@ class PurchaseOrderServiceTest {
                 .hasMessageContaining("Cancelled");
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(ledgerService, never()).recordExpense(any(), any(), any(), any());
     }
 
     @Test
@@ -210,6 +223,7 @@ class PurchaseOrderServiceTest {
                 .hasMessageContaining("ORDERED");
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(ledgerService, never()).recordExpense(any(), any(), any(), any());
     }
 
     private PurchaseOrder purchaseOrder() {

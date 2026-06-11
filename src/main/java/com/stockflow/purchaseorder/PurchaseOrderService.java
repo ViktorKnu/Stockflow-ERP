@@ -4,6 +4,8 @@ import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.inventory.InventoryMovementService;
 import com.stockflow.inventory.MovementType;
+import com.stockflow.ledger.LedgerService;
+import com.stockflow.ledger.LedgerSourceType;
 import com.stockflow.product.Product;
 import com.stockflow.product.ProductRepository;
 import com.stockflow.purchaseorder.dto.PurchaseOrderCreateRequest;
@@ -27,6 +29,7 @@ public class PurchaseOrderService {
     private final SupplierRepository supplierRepository;
     private final ProductRepository productRepository;
     private final InventoryMovementService inventoryMovementService;
+    private final LedgerService ledgerService;
 
     @Transactional(readOnly = true)
     public List<PurchaseOrderResponse> findAll() {
@@ -114,6 +117,13 @@ public class PurchaseOrderService {
                     "Purchase order received: " + order.getId()
             );
         }
+
+        ledgerService.recordExpense(
+                order.getTotalAmount(),
+                "Purchase order received: " + order.getId(),
+                LedgerSourceType.PURCHASE_ORDER,
+                order.getId()
+        );
 
         order.setStatus(PurchaseOrderStatus.RECEIVED);
         return PurchaseOrderMapper.toResponse(order);

@@ -2,7 +2,7 @@
 
 StockFlow ERP er en produksjonsnær inventory-, ordre- og finansiell ledger-API for bedrifter. Prosjektet bygges med Java 21, Spring Boot, PostgreSQL og Docker, og er laget for å vise solid backend-arbeid: ren arkitektur, domenelogikk, transaksjoner, database-migrasjoner, testing, dokumentasjon og CI/CD.
 
-Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et, lagerbevegelser og innkjøpsordre med mottak: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD, Inventory Movement workflow og Purchase Order receiving workflow.
+Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et, lagerbevegelser, innkjøpsordre med mottak og ledger-postering for innkjøp: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD, Inventory Movement workflow, Purchase Order receiving workflow og Ledger reporting.
 
 ## Start her
 
@@ -473,6 +473,7 @@ Da skjer dette i én transaksjon:
 - Ordren får status `RECEIVED`
 - Produktbeholdningen øker med antallet i ordrelinjene
 - Det opprettes en `InventoryMovement` av type `IN` for hver ordrelinje
+- Det opprettes en `LedgerTransaction` av type `EXPENSE`
 - Samme ordre kan ikke mottas to ganger
 
 PowerShell-eksempel:
@@ -507,6 +508,55 @@ Hent alle innkjøpsordre:
 Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/purchase-orders
 ```
 
+## Teste regnskap
+
+Ledger-modulen viser finansielle hendelser som er opprettet av business workflows. I denne fasen opprettes en `EXPENSE` automatisk når en innkjøpsordre mottas.
+
+Tilgjengelige ledger-endepunkter:
+
+```text
+GET /api/ledger/transactions
+GET /api/ledger/transactions/{id}
+GET /api/ledger/summary
+GET /api/ledger/summary/monthly
+```
+
+Etter at du har mottatt en innkjøpsordre, hent ledger-transaksjonene:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/ledger/transactions
+```
+
+Du skal se en transaksjon omtrent slik:
+
+```json
+{
+  "type": "EXPENSE",
+  "amount": 3495.00,
+  "currency": "NOK",
+  "description": "Purchase order received: 1",
+  "sourceType": "PURCHASE_ORDER",
+  "sourceId": 1
+}
+```
+
+Hent totalsammendrag:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/ledger/summary
+```
+
+For et rent miljø med én mottatt innkjøpsordre på `3495.00` skal du få:
+
+```json
+{
+  "totalRevenue": 0,
+  "totalExpenses": 3495.00,
+  "netProfit": -3495.00,
+  "transactionCount": 1
+}
+```
+
 ## Status nå
 
 - Maven-basert Spring Boot-prosjekt med Java 21
@@ -527,11 +577,12 @@ Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/purchase-orders
 - Sporbarhet med previousQuantity og newQuantity
 - Innkjøpsordre med ordrelinjer og totalberegning
 - Mottak av innkjøpsordre som øker lager og lager IN-bevegelser
+- Ledger-transaksjoner for mottatte innkjøpsordre
+- Ledger summary med revenue, expenses, net profit og transaction count
 - DTO-er for all API input/output
 
 ## Kommer videre
 
-- Ledger-postering for innkjøp
 - Audit log for viktige workflows
 
 ## Teknologistack
@@ -558,7 +609,13 @@ Prosjektet bruker feature-basert struktur:
 src/main/java/com/stockflow
   config
   exception
+  inventory
+    dto
+  ledger
+    dto
   product
+    dto
+  purchaseorder
     dto
   supplier
     dto
@@ -576,6 +633,8 @@ Hver modul eier egne entity-klasser, repositories, services, controllers, DTO-er
 
 `PurchaseOrder` representerer varer som bestilles fra en leverandør. En ordre kan ha flere `PurchaseOrderItem`-linjer, og totalbeløpet beregnes fra linjene.
 Når en innkjøpsordre mottas, øker systemet lagerbeholdningen og oppretter `InventoryMovement`-poster av type `IN`.
+
+`LedgerTransaction` representerer finansielle hendelser som oppstår fra business workflows. Når en innkjøpsordre mottas, opprettes en `EXPENSE` med `sourceType` satt til `PURCHASE_ORDER`.
 
 ## API-oversikt nå
 
@@ -615,6 +674,13 @@ Innkjøpsordre:
 - `PUT /api/purchase-orders/{id}/status`
 - `POST /api/purchase-orders/{id}/receive`
 - `DELETE /api/purchase-orders/{id}`
+
+Ledger:
+
+- `GET /api/ledger/transactions`
+- `GET /api/ledger/transactions/{id}`
+- `GET /api/ledger/summary`
+- `GET /api/ledger/summary/monthly`
 
 ## Kjøre lokalt
 
