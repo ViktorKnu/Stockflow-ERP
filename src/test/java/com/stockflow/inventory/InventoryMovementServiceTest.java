@@ -1,5 +1,7 @@
 package com.stockflow.inventory;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.inventory.dto.InventoryMovementCreateRequest;
 import com.stockflow.inventory.dto.InventoryMovementResponse;
@@ -31,6 +33,9 @@ class InventoryMovementServiceTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     @InjectMocks
     private InventoryMovementService movementService;
 
@@ -54,6 +59,12 @@ class InventoryMovementServiceTest {
         assertThat(product.getQuantity()).isEqualTo(15);
         assertThat(response.previousQuantity()).isEqualTo(10);
         assertThat(response.newQuantity()).isEqualTo(15);
+        verify(auditLogService).record(
+                AuditAction.INVENTORY_MOVEMENT_CREATED,
+                "InventoryMovement",
+                100L,
+                "Inventory movement IN for product 1"
+        );
     }
 
     @Test
@@ -90,6 +101,7 @@ class InventoryMovementServiceTest {
 
         assertThat(product.getQuantity()).isEqualTo(3);
         verify(movementRepository, never()).save(any(InventoryMovement.class));
+        verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
     @Test

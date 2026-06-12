@@ -1,0 +1,10 @@
+package com.stockflow.audit;
+
+public enum AuditAction {
+    PRODUCT_CREATED,
+    PRODUCT_UPDATED,
+    PRODUCT_DELETED,
+    INVENTORY_MOVEMENT_CREATED,
+    PURCHASE_ORDER_RECEIVED,
+    LEDGER_TRANSACTION_CREATED
+}

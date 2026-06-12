@@ -1,5 +1,7 @@
 package com.stockflow.ledger;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.ledger.dto.LedgerSummaryResponse;
 import com.stockflow.ledger.dto.LedgerTransactionResponse;
@@ -22,6 +24,7 @@ public class LedgerService {
     private static final String DEFAULT_CURRENCY = "NOK";
 
     private final LedgerTransactionRepository ledgerTransactionRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public List<LedgerTransactionResponse> findAll() {
@@ -79,7 +82,15 @@ public class LedgerService {
                 .sourceId(sourceId)
                 .build();
 
-        return LedgerTransactionMapper.toResponse(ledgerTransactionRepository.save(transaction));
+        LedgerTransaction savedTransaction = ledgerTransactionRepository.save(transaction);
+        auditLogService.record(
+                AuditAction.LEDGER_TRANSACTION_CREATED,
+                "LedgerTransaction",
+                savedTransaction.getId(),
+                "Ledger transaction " + savedTransaction.getType() + " recorded for " + sourceType + " " + sourceId
+        );
+
+        return LedgerTransactionMapper.toResponse(savedTransaction);
     }
 
     private LedgerSummaryResponse summarize(List<LedgerTransaction> transactions) {

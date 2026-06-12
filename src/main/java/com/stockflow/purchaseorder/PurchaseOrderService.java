@@ -1,5 +1,7 @@
 package com.stockflow.purchaseorder;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.inventory.InventoryMovementService;
@@ -30,6 +32,7 @@ public class PurchaseOrderService {
     private final ProductRepository productRepository;
     private final InventoryMovementService inventoryMovementService;
     private final LedgerService ledgerService;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public List<PurchaseOrderResponse> findAll() {
@@ -126,6 +129,13 @@ public class PurchaseOrderService {
         );
 
         order.setStatus(PurchaseOrderStatus.RECEIVED);
+        auditLogService.record(
+                AuditAction.PURCHASE_ORDER_RECEIVED,
+                "PurchaseOrder",
+                order.getId(),
+                "Purchase order received and posted to inventory and ledger"
+        );
+
         return PurchaseOrderMapper.toResponse(order);
     }
 

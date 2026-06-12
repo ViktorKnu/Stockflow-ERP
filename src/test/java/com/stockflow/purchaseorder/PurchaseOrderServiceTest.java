@@ -1,5 +1,7 @@
 package com.stockflow.purchaseorder;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.inventory.InventoryMovementService;
 import com.stockflow.inventory.MovementType;
@@ -49,6 +51,9 @@ class PurchaseOrderServiceTest {
 
     @Mock
     private LedgerService ledgerService;
+
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private PurchaseOrderService purchaseOrderService;
@@ -183,6 +188,12 @@ class PurchaseOrderServiceTest {
                 eq(LedgerSourceType.PURCHASE_ORDER),
                 eq(10L)
         );
+        verify(auditLogService).record(
+                AuditAction.PURCHASE_ORDER_RECEIVED,
+                "PurchaseOrder",
+                10L,
+                "Purchase order received and posted to inventory and ledger"
+        );
     }
 
     @Test
@@ -197,6 +208,7 @@ class PurchaseOrderServiceTest {
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
         verify(ledgerService, never()).recordExpense(any(), any(), any(), any());
+        verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
     @Test
@@ -211,6 +223,7 @@ class PurchaseOrderServiceTest {
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
         verify(ledgerService, never()).recordExpense(any(), any(), any(), any());
+        verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
     @Test
@@ -224,6 +237,7 @@ class PurchaseOrderServiceTest {
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
         verify(ledgerService, never()).recordExpense(any(), any(), any(), any());
+        verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
     private PurchaseOrder purchaseOrder() {

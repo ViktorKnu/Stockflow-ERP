@@ -1,5 +1,7 @@
 package com.stockflow.product;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.DuplicateResourceException;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.product.dto.ProductCreateRequest;
@@ -32,6 +34,9 @@ class ProductServiceTest {
     @Mock
     private SupplierRepository supplierRepository;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     @InjectMocks
     private ProductService productService;
 
@@ -63,6 +68,12 @@ class ProductServiceTest {
         assertThat(response.sku()).isEqualTo("SCAN-001");
         assertThat(response.supplier().id()).isEqualTo(supplier.getId());
         assertThat(response.lowStock()).isFalse();
+        verify(auditLogService).record(
+                AuditAction.PRODUCT_CREATED,
+                "Product",
+                10L,
+                "Product created with SKU SCAN-001"
+        );
     }
 
     @Test
@@ -85,6 +96,7 @@ class ProductServiceTest {
                 .hasMessageContaining("SCAN-001");
 
         verify(productRepository, never()).save(any(Product.class));
+        verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
     @Test

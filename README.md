@@ -2,7 +2,7 @@
 
 StockFlow ERP er en produksjonsnær inventory-, ordre- og finansiell ledger-API for bedrifter. Prosjektet bygges med Java 21, Spring Boot, PostgreSQL og Docker, og er laget for å vise solid backend-arbeid: ren arkitektur, domenelogikk, transaksjoner, database-migrasjoner, testing, dokumentasjon og CI/CD.
 
-Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et, lagerbevegelser, innkjøpsordre med mottak og ledger-postering for innkjøp: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD, Inventory Movement workflow, Purchase Order receiving workflow og Ledger reporting.
+Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et, lagerbevegelser, innkjøpsordre med mottak, ledger-postering for innkjøp og audit log: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD, Inventory Movement workflow, Purchase Order receiving workflow, Ledger reporting og read-only AuditLog API.
 
 ## Start her
 
@@ -557,6 +557,41 @@ For et rent miljø med én mottatt innkjøpsordre på `3495.00` skal du få:
 }
 ```
 
+## Teste audit log
+
+Audit log viser viktige hendelser som systemet har utført. I denne fasen logges blant annet produktendringer, lagerbevegelser, mottak av innkjøpsordre og ledger-posteringer.
+
+Tilgjengelige audit-endepunkter:
+
+```text
+GET /api/audit-logs
+GET /api/audit-logs/{id}
+GET /api/audit-logs/entity/{entityType}/{entityId}
+```
+
+Etter at du har opprettet et produkt og mottatt en innkjøpsordre, hent alle audit logs:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/audit-logs
+```
+
+Du skal kunne se hendelser som:
+
+```text
+PRODUCT_CREATED
+INVENTORY_MOVEMENT_CREATED
+LEDGER_TRANSACTION_CREATED
+PURCHASE_ORDER_RECEIVED
+```
+
+Hent audit logs for en bestemt ordre:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/audit-logs/entity/PurchaseOrder/1
+```
+
+Audit API-et er read-only. Nye audit logs opprettes av business workflows, ikke direkte fra controller.
+
 ## Status nå
 
 - Maven-basert Spring Boot-prosjekt med Java 21
@@ -579,11 +614,12 @@ For et rent miljø med én mottatt innkjøpsordre på `3495.00` skal du få:
 - Mottak av innkjøpsordre som øker lager og lager IN-bevegelser
 - Ledger-transaksjoner for mottatte innkjøpsordre
 - Ledger summary med revenue, expenses, net profit og transaction count
+- Audit log for viktige workflows
 - DTO-er for all API input/output
 
 ## Kommer videre
 
-- Audit log for viktige workflows
+- Salgsordre med ordrelinjer og statusflyt
 
 ## Teknologistack
 
@@ -609,6 +645,8 @@ Prosjektet bruker feature-basert struktur:
 src/main/java/com/stockflow
   config
   exception
+  audit
+    dto
   inventory
     dto
   ledger
@@ -635,6 +673,8 @@ Hver modul eier egne entity-klasser, repositories, services, controllers, DTO-er
 Når en innkjøpsordre mottas, øker systemet lagerbeholdningen og oppretter `InventoryMovement`-poster av type `IN`.
 
 `LedgerTransaction` representerer finansielle hendelser som oppstår fra business workflows. Når en innkjøpsordre mottas, opprettes en `EXPENSE` med `sourceType` satt til `PURCHASE_ORDER`.
+
+`AuditLog` representerer viktige systemhendelser. Loggene er read-only fra API-et og brukes til å forklare hva systemet gjorde, mot hvilken entitet, og når det skjedde.
 
 ## API-oversikt nå
 
@@ -681,6 +721,12 @@ Ledger:
 - `GET /api/ledger/transactions/{id}`
 - `GET /api/ledger/summary`
 - `GET /api/ledger/summary/monthly`
+
+Audit logs:
+
+- `GET /api/audit-logs`
+- `GET /api/audit-logs/{id}`
+- `GET /api/audit-logs/entity/{entityType}/{entityId}`
 
 ## Kjøre lokalt
 
@@ -759,7 +805,6 @@ Plassholder for Swagger UI, Docker Compose og fremtidige workflow-bilder.
 ## Fremtidige forbedringer
 
 - Testcontainers-baserte repository- og API-integrasjonstester
-- AuditLog-modul for viktige systemhendelser
 - Database-seeding for demo-data
 - Rate limiting og request correlation IDs
 - Bedre observability med metrics og structured logging

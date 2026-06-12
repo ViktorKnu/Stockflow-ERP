@@ -1,5 +1,7 @@
 package com.stockflow.product;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.DuplicateResourceException;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.product.dto.ProductCreateRequest;
@@ -19,6 +21,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final SupplierRepository supplierRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public List<ProductResponse> findAll() {
@@ -49,7 +52,15 @@ public class ProductService {
                 .supplier(resolveSupplier(request.supplierId()))
                 .build();
 
-        return ProductMapper.toResponse(productRepository.save(product));
+        Product savedProduct = productRepository.save(product);
+        auditLogService.record(
+                AuditAction.PRODUCT_CREATED,
+                "Product",
+                savedProduct.getId(),
+                "Product created with SKU " + savedProduct.getSku()
+        );
+
+        return ProductMapper.toResponse(savedProduct);
     }
 
     @Transactional
@@ -68,12 +79,25 @@ public class ProductService {
         product.setPrice(request.price());
         product.setSupplier(resolveSupplier(request.supplierId()));
 
+        auditLogService.record(
+                AuditAction.PRODUCT_UPDATED,
+                "Product",
+                product.getId(),
+                "Product updated with SKU " + product.getSku()
+        );
+
         return ProductMapper.toResponse(product);
     }
 
     @Transactional
     public void delete(Long id) {
         Product product = getProduct(id);
+        auditLogService.record(
+                AuditAction.PRODUCT_DELETED,
+                "Product",
+                product.getId(),
+                "Product deleted with SKU " + product.getSku()
+        );
         productRepository.delete(product);
     }
 

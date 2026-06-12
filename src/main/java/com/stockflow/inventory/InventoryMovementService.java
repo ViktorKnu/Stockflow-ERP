@@ -1,5 +1,7 @@
 package com.stockflow.inventory;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.inventory.dto.InventoryMovementCreateRequest;
@@ -18,6 +20,7 @@ public class InventoryMovementService {
 
     private final InventoryMovementRepository movementRepository;
     private final ProductRepository productRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public InventoryMovementResponse create(InventoryMovementCreateRequest request) {
@@ -43,7 +46,15 @@ public class InventoryMovementService {
                 .newQuantity(newQuantity)
                 .build();
 
-        return InventoryMovementMapper.toResponse(movementRepository.save(movement));
+        InventoryMovement savedMovement = movementRepository.save(movement);
+        auditLogService.record(
+                AuditAction.INVENTORY_MOVEMENT_CREATED,
+                "InventoryMovement",
+                savedMovement.getId(),
+                "Inventory movement " + type + " for product " + product.getId()
+        );
+
+        return InventoryMovementMapper.toResponse(savedMovement);
     }
 
     @Transactional(readOnly = true)

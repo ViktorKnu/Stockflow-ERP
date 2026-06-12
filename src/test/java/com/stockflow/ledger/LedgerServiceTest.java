@@ -1,5 +1,7 @@
 package com.stockflow.ledger;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.ledger.dto.LedgerSummaryResponse;
 import com.stockflow.ledger.dto.LedgerTransactionResponse;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -21,6 +24,9 @@ class LedgerServiceTest {
 
     @Mock
     private LedgerTransactionRepository ledgerTransactionRepository;
+
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private LedgerService ledgerService;
@@ -47,6 +53,12 @@ class LedgerServiceTest {
         assertThat(response.currency()).isEqualTo("NOK");
         assertThat(response.sourceType()).isEqualTo(LedgerSourceType.PURCHASE_ORDER);
         assertThat(response.sourceId()).isEqualTo(10L);
+        verify(auditLogService).record(
+                AuditAction.LEDGER_TRANSACTION_CREATED,
+                "LedgerTransaction",
+                1L,
+                "Ledger transaction EXPENSE recorded for PURCHASE_ORDER 10"
+        );
     }
 
     @Test
