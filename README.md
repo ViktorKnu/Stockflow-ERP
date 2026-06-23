@@ -1,206 +1,85 @@
 # StockFlow ERP API
 
-StockFlow ERP er en produksjonsnær inventory-, ordre- og finansiell ledger-API for bedrifter. Prosjektet bygges med Java 21, Spring Boot, PostgreSQL og Docker, og er laget for å vise solid backend-arbeid: ren arkitektur, domenelogikk, transaksjoner, database-migrasjoner, testing, dokumentasjon og CI/CD.
+StockFlow ERP er en produksjonsnær inventory-, ordre- og finansiell ledger-API for bedrifter. Prosjektet bygges med Java 21, Spring Boot, PostgreSQL og Docker, og er laget for å vise realistisk backend-arbeid med domenelogikk, transaksjoner, Flyway-migrasjoner, testing, dokumentasjon og CI/CD.
 
-Siste push på `main` inneholder prosjektgrunnmuren, leverandør-API-et, produkt-API-et, lagerbevegelser, innkjøpsordre med mottak, ledger-postering for innkjøp og audit log: Spring Boot, Docker, PostgreSQL, Flyway, OpenAPI, Actuator, global feilhåndtering, Supplier CRUD, Product CRUD, Inventory Movement workflow, Purchase Order receiving workflow, Ledger reporting og read-only AuditLog API.
+## Rask start
 
-## Start her
-
-Alle kommandoer under kjøres fra prosjektmappen. I mitt tilfelle:
+Kjør alt fra prosjektmappen:
 
 ```powershell
 cd C:\Users\vikto\Downloads\Github\Stockflow-ERP
-```
-
-Start hele systemet med Docker:
-
-```powershell
 docker compose up --build
 ```
 
-Når appen er startet, åpne disse i nettleseren:
+Når appen er startet, åpne:
 
 ```text
-http://localhost:8080/actuator/health
 http://localhost:8080/swagger-ui.html
+http://localhost:8080/actuator/health
 ```
 
-Health-endepunktet skal svare omtrent slik:
+`/actuator/health` skal svare:
 
 ```json
 {"status":"UP"}
 ```
 
-Swagger UI er der du kan se og teste API-endepunkter uten å skrive egne HTTP-kall.
+Stopp appen med `Ctrl + C`.
 
-Stopp appen med:
-
-```powershell
-Ctrl + C
-```
-
-Rydd containere, nettverk og databasevolum:
+Rydd containere og databasevolum når du vil starte helt rent:
 
 ```powershell
 docker compose down -v
 ```
 
-Bruk `-v` når du vil starte med helt tom database. Ikke bruk `-v` hvis du vil beholde data mellom kjøringer.
+Ikke bruk `-v` hvis du vil beholde data mellom kjøringer.
 
-## Teste hver push rent
+## Hva finnes nå
 
-Vi bygger prosjektet med mange små commits. Hvis du har lokale filer som ikke er pushet ennå, kan Docker bygge med de filene og gi et annet resultat enn siste push på GitHub. For å teste nøyaktig det som er commitet, bruk en ren Git worktree.
+Prosjektet har nå:
 
-Lag en ren testkopi av siste commit:
+- Spring Boot API med Java 21
+- PostgreSQL via Docker Compose
+- Flyway-migrasjoner for tabeller
+- Swagger/OpenAPI
+- Actuator health endpoint
+- Global feilhåndtering
+- GitHub Actions workflow
+- Leverandører
+- Produkter
+- Lagerbevegelser
+- Innkjøpsordre med mottak
+- Ledger for innkjøpskostnader
+- Audit log for viktige hendelser
 
-```powershell
-git -C C:\Users\vikto\Downloads\Github\Stockflow-ERP worktree add C:\Users\vikto\Downloads\Github\Stockflow-ERP-foundation-test HEAD
-```
-
-Gå inn i testkopien:
-
-```powershell
-cd C:\Users\vikto\Downloads\Github\Stockflow-ERP-foundation-test
-```
-
-Start appen:
-
-```powershell
-docker compose up --build
-```
-
-Test:
+Siste funksjonelle flyt er:
 
 ```text
-http://localhost:8080/actuator/health
-http://localhost:8080/swagger-ui.html
+Leverandør -> Produkt -> Innkjøpsordre -> Mottak -> Lager øker -> Ledger EXPENSE -> Audit log
 ```
 
-Når du er ferdig:
+## Test i Swagger
 
-```powershell
-Ctrl + C
-docker compose down -v
-cd C:\Users\vikto\Downloads\Github\Stockflow-ERP
-git worktree remove C:\Users\vikto\Downloads\Github\Stockflow-ERP-foundation-test
-```
-
-Hvis worktree-mappen allerede finnes, slett den eller bruk et annet navn, for eksempel:
-
-```powershell
-git -C C:\Users\vikto\Downloads\Github\Stockflow-ERP worktree add C:\Users\vikto\Downloads\Github\Stockflow-ERP-test-2 HEAD
-```
-
-## Docker-sjekk
-
-Sjekk at Docker Desktop kjører:
-
-```powershell
-docker version
-```
-
-Du skal se både `Client` og `Server`. Hvis du bare ser `Client`, åpne Docker Desktop og vent til den er ferdig startet.
-
-Vanlige feil:
-
-- `failed to connect to the docker API`: Docker Desktop kjører ikke.
-- `port is already allocated`: En annen prosess bruker porten. Stopp gamle containere med `docker compose down`.
-- Appen starter ikke etter databaseendringer: Rydd databasevolumet med `docker compose down -v`.
-
-Se kjørende containere:
-
-```powershell
-docker ps
-```
-
-Se alle containere, også stoppede:
-
-```powershell
-docker ps -a
-```
-
-Se logger for appen:
-
-```powershell
-docker logs stockflow-api
-```
-
-Se logger for databasen:
-
-```powershell
-docker logs stockflow-db
-```
-
-## Nyttige lokale URL-er
-
-App:
-
-```text
-http://localhost:8080
-```
-
-Health:
-
-```text
-http://localhost:8080/actuator/health
-```
-
-Swagger UI:
+Den enkleste måten å teste på er Swagger UI:
 
 ```text
 http://localhost:8080/swagger-ui.html
 ```
 
-OpenAPI JSON:
+Anbefalt testrekkefølge:
 
-```text
-http://localhost:8080/v3/api-docs
-```
+1. Opprett leverandør med `POST /api/suppliers`
+2. Opprett produkt med `POST /api/products`
+3. Test lagerbevegelse med `POST /api/inventory/movements`
+4. Opprett innkjøpsordre med `POST /api/purchase-orders`
+5. Legg til ordrelinje med `POST /api/purchase-orders/{id}/items`
+6. Motta innkjøpsordre med `POST /api/purchase-orders/{id}/receive`
+7. Sjekk regnskap med `GET /api/ledger/summary`
+8. Sjekk hendelser med `GET /api/audit-logs`
 
-PostgreSQL fra maskinen din:
+## Eksempeldata
 
-```text
-localhost:5432
-database: stockflow
-username: stockflow
-password: stockflow
-```
-
-pgAdmin, hvis startet med tools-profil:
-
-```text
-http://localhost:5050
-```
-
-Start med pgAdmin:
-
-```powershell
-docker compose --profile tools up --build
-```
-
-## Teste leverandør-API
-
-Den enkleste måten å teste API-et på er Swagger:
-
-1. Start appen med `docker compose up --build`
-2. Åpne `http://localhost:8080/swagger-ui.html`
-3. Velg et endepunkt
-4. Trykk `Try it out`
-5. Fyll inn request body hvis endepunktet krever det
-6. Trykk `Execute`
-
-Tilgjengelige leverandør-endepunkter:
-
-```text
-GET    /api/suppliers
-GET    /api/suppliers/{id}
-POST   /api/suppliers
-PUT    /api/suppliers/{id}
-DELETE /api/suppliers/{id}
-GET    /api/suppliers/{id}/products
-```
-
-Opprett en leverandør med `POST /api/suppliers`:
+Opprett leverandør:
 
 ```json
 {
@@ -211,68 +90,7 @@ Opprett en leverandør med `POST /api/suppliers`:
 }
 ```
 
-Du kan også teste med PowerShell:
-
-```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/actuator/health
-```
-
-Eksempel på `POST` etter Supplier-commiten:
-
-```powershell
-$body = @{
-  name = "Nordic Supplies AS"
-  email = "orders@nordic.example"
-  phone = "+47 22 00 00 00"
-  address = "Oslo"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/suppliers -ContentType "application/json" -Body $body
-```
-
-Hent alle leverandører:
-
-```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/suppliers
-```
-
-Oppdater leverandør med id `1`:
-
-```powershell
-$body = @{
-  name = "Nordic Supplies Norge AS"
-  email = "sales@nordic.example"
-  phone = "+47 22 00 00 01"
-  address = "Bergen"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Put -Uri http://localhost:8080/api/suppliers/1 -ContentType "application/json" -Body $body
-```
-
-Slett leverandør med id `1`:
-
-```powershell
-Invoke-RestMethod -Method Delete -Uri http://localhost:8080/api/suppliers/1
-```
-
-## Teste produkt-API
-
-Produkter kan opprettes alene eller kobles til en leverandør med `supplierId`. Start med å opprette en leverandør, og bruk deretter `id` fra responsen når du lager produktet.
-
-Tilgjengelige produkt-endepunkter:
-
-```text
-GET    /api/products
-GET    /api/products/{id}
-POST   /api/products
-PUT    /api/products/{id}
-DELETE /api/products/{id}
-GET    /api/products/search?name=
-GET    /api/products/low-stock
-GET    /api/products/category/{category}
-```
-
-Opprett et produkt med `POST /api/products`:
+Opprett produkt:
 
 ```json
 {
@@ -287,95 +105,7 @@ Opprett et produkt med `POST /api/products`:
 }
 ```
 
-Lag et low-stock-produkt:
-
-```json
-{
-  "name": "Receipt Paper",
-  "sku": "PAPER-001",
-  "description": "Thermal receipt paper rolls",
-  "category": "Office",
-  "quantity": 2,
-  "minimumStock": 5,
-  "price": 29.00,
-  "supplierId": 1
-}
-```
-
-Test med PowerShell:
-
-```powershell
-$body = @{
-  name = "Barcode Scanner"
-  sku = "SCAN-001"
-  description = "USB barcode scanner for warehouse use"
-  category = "Hardware"
-  quantity = 12
-  minimumStock = 3
-  price = 799.00
-  supplierId = 1
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/products -ContentType "application/json" -Body $body
-```
-
-Hent alle produkter:
-
-```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/products
-```
-
-Søk etter produktnavn:
-
-```powershell
-Invoke-RestMethod -Method Get -Uri "http://localhost:8080/api/products/search?name=barcode"
-```
-
-Hent low-stock-produkter:
-
-```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/products/low-stock
-```
-
-Hent produkter for leverandør med id `1`:
-
-```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/suppliers/1/products
-```
-
-## Teste lagerbevegelser
-
-Lagerbevegelser er den første ordentlige business-workflowen. Når du oppretter en lagerbevegelse, oppdateres produktets `quantity` og systemet lagrer `previousQuantity` og `newQuantity` for sporbarhet.
-
-Tilgjengelige lager-endepunkter:
-
-```text
-POST /api/inventory/movements
-GET  /api/inventory/movements
-GET  /api/inventory/movements/{id}
-GET  /api/inventory/movements/product/{productId}
-```
-
-Bevegelsestyper:
-
-```text
-IN          øker lagerbeholdning
-OUT         senker lagerbeholdning
-ADJUSTMENT  setter lagerbeholdning til oppgitt quantity
-```
-
-Eksempel: legg 5 varer inn på lager for produkt med id `1`:
-
-```json
-{
-  "productId": 1,
-  "type": "IN",
-  "quantity": 5,
-  "reason": "Supplier delivery"
-}
-```
-
-Eksempel: ta 3 varer ut av lager:
+Lag lagerbevegelse ut:
 
 ```json
 {
@@ -386,43 +116,153 @@ Eksempel: ta 3 varer ut av lager:
 }
 ```
 
-Eksempel: manuell lagerjustering til 20:
+Opprett innkjøpsordre:
+
+```json
+{
+  "supplierId": 1
+}
+```
+
+Legg til ordrelinje:
 
 ```json
 {
   "productId": 1,
-  "type": "ADJUSTMENT",
-  "quantity": 20,
-  "reason": "Manual stock count"
+  "quantity": 5,
+  "unitPrice": 699.00
 }
 ```
 
-PowerShell-eksempel:
+Motta ordren:
 
-```powershell
-$body = @{
-  productId = 1
-  type = "OUT"
-  quantity = 3
-  reason = "Customer order shipped"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/inventory/movements -ContentType "application/json" -Body $body
+```text
+POST /api/purchase-orders/1/receive
 ```
 
-Hent bevegelser for produkt med id `1`:
+Når ordren mottas, skjer dette i én transaksjon:
+
+- Ordren får status `RECEIVED`
+- Produktets lagerbeholdning øker
+- Det opprettes `InventoryMovement` av type `IN`
+- Det opprettes `LedgerTransaction` av type `EXPENSE`
+- Det opprettes audit log
+- Samme ordre kan ikke mottas to ganger
+
+## PowerShell-eksempler
+
+Health check:
 
 ```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/inventory/movements/product/1
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/actuator/health
 ```
 
-Systemet stopper `OUT` hvis bevegelsen ville gitt negativ lagerbeholdning.
+Hent alle produkter:
 
-## Teste innkjøpsordre
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/products
+```
 
-Innkjøpsordre lar deg registrere varer som skal kjøpes fra en leverandør. Du kan opprette ordre, legge til ordrelinjer, beregne totalbeløp, endre status til `ORDERED` eller `CANCELLED`, og motta bestilte varer inn på lager.
+Hent low-stock-produkter:
 
-Tilgjengelige innkjøpsordre-endepunkter:
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/products/low-stock
+```
+
+Hent ledger summary:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/ledger/summary
+```
+
+Hent audit logs:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/audit-logs
+```
+
+## Lokale URL-er
+
+```text
+App:          http://localhost:8080
+Swagger UI:   http://localhost:8080/swagger-ui.html
+OpenAPI JSON: http://localhost:8080/v3/api-docs
+Health:       http://localhost:8080/actuator/health
+```
+
+PostgreSQL fra maskinen:
+
+```text
+host:     localhost
+port:     5432
+database: stockflow
+username: stockflow
+password: stockflow
+```
+
+Valgfri pgAdmin:
+
+```powershell
+docker compose --profile tools up --build
+```
+
+```text
+http://localhost:5050
+```
+
+## Miljøvariabler
+
+Standardverdier ligger i `.env.example`:
+
+```text
+APP_PORT=8080
+POSTGRES_DB=stockflow
+POSTGRES_USER=stockflow
+POSTGRES_PASSWORD=stockflow
+POSTGRES_PORT=5432
+PGADMIN_EMAIL=admin@stockflow.local
+PGADMIN_PASSWORD=admin
+PGADMIN_PORT=5050
+```
+
+Docker Compose bruker disse verdiene hvis de finnes i miljøet ditt. For vanlig lokal kjøring holder standardverdiene i repoet.
+
+## API-oversikt
+
+Leverandører:
+
+```text
+GET    /api/suppliers
+GET    /api/suppliers/{id}
+POST   /api/suppliers
+PUT    /api/suppliers/{id}
+DELETE /api/suppliers/{id}
+GET    /api/suppliers/{id}/products
+```
+
+Produkter:
+
+```text
+GET    /api/products
+GET    /api/products/{id}
+POST   /api/products
+PUT    /api/products/{id}
+DELETE /api/products/{id}
+GET    /api/products/search?name=
+GET    /api/products/low-stock
+GET    /api/products/category/{category}
+```
+
+Lagerbevegelser:
+
+```text
+POST /api/inventory/movements
+GET  /api/inventory/movements
+GET  /api/inventory/movements/{id}
+GET  /api/inventory/movements/product/{productId}
+```
+
+Innkjøpsordre:
 
 ```text
 GET    /api/purchase-orders
@@ -434,85 +274,7 @@ POST   /api/purchase-orders/{id}/receive
 DELETE /api/purchase-orders/{id}
 ```
 
-Opprett en innkjøpsordre for leverandør med id `1`:
-
-```json
-{
-  "supplierId": 1
-}
-```
-
-Legg til produkt med id `1` på innkjøpsordre med id `1`:
-
-```json
-{
-  "productId": 1,
-  "quantity": 5,
-  "unitPrice": 699.00
-}
-```
-
-Responsen skal vise `lineTotal` og oppdatert `totalAmount`.
-
-Sett ordrestatus til `ORDERED`:
-
-```json
-{
-  "status": "ORDERED"
-}
-```
-
-Motta ordren når varene kommer inn:
-
-```powershell
-Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/purchase-orders/1/receive
-```
-
-Da skjer dette i én transaksjon:
-
-- Ordren får status `RECEIVED`
-- Produktbeholdningen øker med antallet i ordrelinjene
-- Det opprettes en `InventoryMovement` av type `IN` for hver ordrelinje
-- Det opprettes en `LedgerTransaction` av type `EXPENSE`
-- Samme ordre kan ikke mottas to ganger
-
-PowerShell-eksempel:
-
-```powershell
-$orderBody = @{
-  supplierId = 1
-} | ConvertTo-Json
-
-$order = Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/purchase-orders -ContentType "application/json" -Body $orderBody
-
-$itemBody = @{
-  productId = 1
-  quantity = 5
-  unitPrice = 699.00
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/purchase-orders/$($order.id)/items" -ContentType "application/json" -Body $itemBody
-
-$statusBody = @{
-  status = "ORDERED"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Put -Uri "http://localhost:8080/api/purchase-orders/$($order.id)/status" -ContentType "application/json" -Body $statusBody
-
-Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/purchase-orders/$($order.id)/receive"
-```
-
-Hent alle innkjøpsordre:
-
-```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/purchase-orders
-```
-
-## Teste regnskap
-
-Ledger-modulen viser finansielle hendelser som er opprettet av business workflows. I denne fasen opprettes en `EXPENSE` automatisk når en innkjøpsordre mottas.
-
-Tilgjengelige ledger-endepunkter:
+Ledger:
 
 ```text
 GET /api/ledger/transactions
@@ -521,47 +283,7 @@ GET /api/ledger/summary
 GET /api/ledger/summary/monthly
 ```
 
-Etter at du har mottatt en innkjøpsordre, hent ledger-transaksjonene:
-
-```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/ledger/transactions
-```
-
-Du skal se en transaksjon omtrent slik:
-
-```json
-{
-  "type": "EXPENSE",
-  "amount": 3495.00,
-  "currency": "NOK",
-  "description": "Purchase order received: 1",
-  "sourceType": "PURCHASE_ORDER",
-  "sourceId": 1
-}
-```
-
-Hent totalsammendrag:
-
-```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/ledger/summary
-```
-
-For et rent miljø med én mottatt innkjøpsordre på `3495.00` skal du få:
-
-```json
-{
-  "totalRevenue": 0,
-  "totalExpenses": 3495.00,
-  "netProfit": -3495.00,
-  "transactionCount": 1
-}
-```
-
-## Teste audit log
-
-Audit log viser viktige hendelser som systemet har utført. I denne fasen logges blant annet produktendringer, lagerbevegelser, mottak av innkjøpsordre og ledger-posteringer.
-
-Tilgjengelige audit-endepunkter:
+Audit logs:
 
 ```text
 GET /api/audit-logs
@@ -569,57 +291,75 @@ GET /api/audit-logs/{id}
 GET /api/audit-logs/entity/{entityType}/{entityId}
 ```
 
-Etter at du har opprettet et produkt og mottatt en innkjøpsordre, hent alle audit logs:
+## Docker og feilsøking
+
+Sjekk at Docker Desktop kjører:
 
 ```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/audit-logs
+docker version
 ```
 
-Du skal kunne se hendelser som:
+Du skal se både `Client` og `Server`.
+
+Vanlige problemer:
+
+- `failed to connect to the docker API`: Docker Desktop kjører ikke.
+- `port is already allocated`: Stopp gamle containere med `docker compose down`.
+- Appen starter ikke etter databaseendringer: Kjør `docker compose down -v`.
+
+Nyttige kommandoer:
+
+```powershell
+docker ps
+docker ps -a
+docker logs stockflow-api
+docker logs stockflow-db
+```
+
+## Teste en ren commit
+
+Hvis du vil teste akkurat det som er commitet, bruk en egen worktree:
+
+```powershell
+git -C C:\Users\vikto\Downloads\Github\Stockflow-ERP worktree add C:\Users\vikto\Downloads\Github\Stockflow-ERP-test HEAD
+cd C:\Users\vikto\Downloads\Github\Stockflow-ERP-test
+docker compose up --build
+```
+
+Når du er ferdig:
+
+```powershell
+Ctrl + C
+docker compose down -v
+cd C:\Users\vikto\Downloads\Github\Stockflow-ERP
+git worktree remove C:\Users\vikto\Downloads\Github\Stockflow-ERP-test
+```
+
+## Arkitektur
+
+Prosjektet bruker feature-basert struktur:
 
 ```text
-PRODUCT_CREATED
-INVENTORY_MOVEMENT_CREATED
-LEDGER_TRANSACTION_CREATED
-PURCHASE_ORDER_RECEIVED
+src/main/java/com/stockflow
+  audit
+  config
+  exception
+  inventory
+  ledger
+  product
+  purchaseorder
+  supplier
 ```
 
-Hent audit logs for en bestemt ordre:
+Hver modul eier egne entities, repositories, services, controllers og DTO-er. Controllerne er tynne, businesslogikk ligger i service-laget, og API-et eksponerer DTO-er i stedet for JPA entities.
 
-```powershell
-Invoke-RestMethod -Method Get -Uri http://localhost:8080/api/audit-logs/entity/PurchaseOrder/1
-```
+Viktige designvalg:
 
-Audit API-et er read-only. Nye audit logs opprettes av business workflows, ikke direkte fra controller.
-
-## Status nå
-
-- Maven-basert Spring Boot-prosjekt med Java 21
-- Feature-basert pakkestruktur under `com.stockflow`
-- PostgreSQL-konfigurasjon med Flyway-migrasjon
-- Dockerfile og Docker Compose med app, database og valgfri pgAdmin-profil
-- Swagger/OpenAPI på `/swagger-ui.html`
-- Actuator health endpoint på `/actuator/health`
-- Global exception handler med valideringsfeil
-- GitHub Actions workflow for test og build
-- Supplier CRUD
-- Product CRUD
-- Produktsøk, kategorifilter og low-stock-endepunkt
-- Kobling mellom Product og Supplier
-- Endepunkt for produkter per leverandør
-- Lagerbevegelser med IN, OUT og ADJUSTMENT
-- Transaksjonell oppdatering av produktbeholdning
-- Sporbarhet med previousQuantity og newQuantity
-- Innkjøpsordre med ordrelinjer og totalberegning
-- Mottak av innkjøpsordre som øker lager og lager IN-bevegelser
-- Ledger-transaksjoner for mottatte innkjøpsordre
-- Ledger summary med revenue, expenses, net profit og transaction count
-- Audit log for viktige workflows
-- DTO-er for all API input/output
-
-## Kommer videre
-
-- Salgsordre med ordrelinjer og statusflyt
+- `BigDecimal` brukes for penger
+- `@Transactional` brukes rundt viktige workflows
+- Flyway eier databaseskjemaet
+- Produkter har optimistisk låsing med `@Version`
+- Audit logs opprettes av business workflows
 
 ## Teknologistack
 
@@ -632,171 +372,45 @@ Audit API-et er read-only. Nye audit logs opprettes av business workflows, ikke 
 - Flyway
 - Docker og Docker Compose
 - Maven
-- Swagger/OpenAPI via springdoc
-- JUnit 5, Mockito og Testcontainers
+- Swagger/OpenAPI
+- JUnit 5
+- Mockito
+- Testcontainers
 - Lombok
 - GitHub Actions
 
-## Arkitektur
-
-Prosjektet bruker feature-basert struktur:
-
-```text
-src/main/java/com/stockflow
-  config
-  exception
-  audit
-    dto
-  inventory
-    dto
-  ledger
-    dto
-  product
-    dto
-  purchaseorder
-    dto
-  supplier
-    dto
-```
-
-Hver modul eier egne entity-klasser, repositories, services, controllers, DTO-er og mapper-logikk. Controllere eksponerer aldri JPA entities direkte.
-
-## Domenemodell nå
-
-`Supplier` representerer leverandører som kan levere produkter til bedriften. Modulen har egen entity, repository, service, controller, request DTO-er og response DTO.
-
-`Product` representerer varer bedriften kjøper, lagrer og selger. SKU er unik, lagerbeholdning og minimumslager kan ikke være negative, pris må være positiv, og `Product` har `@Version` for optimistisk låsing før inventory-fasen.
-
-`InventoryMovement` representerer alle lagerendringer. Hver bevegelse peker på et produkt, har type `IN`, `OUT` eller `ADJUSTMENT`, og lagrer både tidligere og ny lagerbeholdning.
-
-`PurchaseOrder` representerer varer som bestilles fra en leverandør. En ordre kan ha flere `PurchaseOrderItem`-linjer, og totalbeløpet beregnes fra linjene.
-Når en innkjøpsordre mottas, øker systemet lagerbeholdningen og oppretter `InventoryMovement`-poster av type `IN`.
-
-`LedgerTransaction` representerer finansielle hendelser som oppstår fra business workflows. Når en innkjøpsordre mottas, opprettes en `EXPENSE` med `sourceType` satt til `PURCHASE_ORDER`.
-
-`AuditLog` representerer viktige systemhendelser. Loggene er read-only fra API-et og brukes til å forklare hva systemet gjorde, mot hvilken entitet, og når det skjedde.
-
-## API-oversikt nå
-
-Leverandører:
-
-- `GET /api/suppliers`
-- `GET /api/suppliers/{id}`
-- `POST /api/suppliers`
-- `PUT /api/suppliers/{id}`
-- `DELETE /api/suppliers/{id}`
-- `GET /api/suppliers/{id}/products`
-
-Produkter:
-
-- `GET /api/products`
-- `GET /api/products/{id}`
-- `POST /api/products`
-- `PUT /api/products/{id}`
-- `DELETE /api/products/{id}`
-- `GET /api/products/search?name=`
-- `GET /api/products/low-stock`
-- `GET /api/products/category/{category}`
-
-Lagerbevegelser:
-
-- `POST /api/inventory/movements`
-- `GET /api/inventory/movements`
-- `GET /api/inventory/movements/{id}`
-- `GET /api/inventory/movements/product/{productId}`
-
-Innkjøpsordre:
-
-- `GET /api/purchase-orders`
-- `GET /api/purchase-orders/{id}`
-- `POST /api/purchase-orders`
-- `POST /api/purchase-orders/{id}/items`
-- `PUT /api/purchase-orders/{id}/status`
-- `POST /api/purchase-orders/{id}/receive`
-- `DELETE /api/purchase-orders/{id}`
-
-Ledger:
-
-- `GET /api/ledger/transactions`
-- `GET /api/ledger/transactions/{id}`
-- `GET /api/ledger/summary`
-- `GET /api/ledger/summary/monthly`
-
-Audit logs:
-
-- `GET /api/audit-logs`
-- `GET /api/audit-logs/{id}`
-- `GET /api/audit-logs/entity/{entityType}/{entityId}`
-
-## Kjøre lokalt
-
-Kopier miljøfilen:
-
-```bash
-cp .env.example .env
-```
-
-Start PostgreSQL og app:
-
-```bash
-docker compose up --build
-```
-
-Swagger UI:
-
-```text
-http://localhost:8080/swagger-ui.html
-```
-
-Health endpoint:
-
-```text
-http://localhost:8080/actuator/health
-```
-
-Valgfri pgAdmin:
-
-```bash
-docker compose --profile tools up --build
-```
-
-## Miljøvariabler
-
-Se `.env.example` for standardverdier:
-
-- `APP_PORT`
-- `POSTGRES_DB`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_PORT`
-- `PGADMIN_EMAIL`
-- `PGADMIN_PASSWORD`
-- `PGADMIN_PORT`
-
 ## Testing
 
-Kjør unit-tester:
+Kjør tester lokalt hvis Maven er installert:
 
-```bash
+```powershell
 mvn test
 ```
 
 Bygg applikasjonen:
 
-```bash
+```powershell
 mvn -DskipTests package
 ```
 
-GitHub Actions kjører tester og build på push og pull requests.
+Hvis Maven ikke er installert lokalt, bygger Docker prosjektet når du kjører:
+
+```powershell
+docker compose up --build
+```
+
+GitHub Actions kjører tester og build på push.
 
 ## Roadmap
 
-- Fase 3: InventoryMovement med IN, OUT og ADJUSTMENT
-- Fase 4: Purchase orders med receiving-workflow, ledger expense og audit log
-- Fase 5: Sales orders med shipping-workflow, ledger revenue og audit log
-- Fase 6: Ledger reporting og månedlig oppsummering
-- Fase 7: Spring Security, JWT, brukere og roller
-- Fase 8: Flere integrasjonstester, eksempeldata og Postman collection
+Neste naturlige commits:
+
+1. `legg til salgsordre`
+2. `send salgsordre fra lager`
+3. `før inntekt i regnskap`
+4. `legg til månedlig rapport`
+5. `legg til innlogging`
+6. `legg til roller og tilgang`
 
 ## Screenshots
 
@@ -804,7 +418,8 @@ Plassholder for Swagger UI, Docker Compose og fremtidige workflow-bilder.
 
 ## Fremtidige forbedringer
 
-- Testcontainers-baserte repository- og API-integrasjonstester
-- Database-seeding for demo-data
-- Rate limiting og request correlation IDs
-- Bedre observability med metrics og structured logging
+- Flere integrasjonstester med Testcontainers
+- Demo-data via Flyway eller seed-runner
+- Postman collection
+- Request correlation IDs
+- Bedre observability med metrics og strukturert logging
