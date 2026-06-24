@@ -49,14 +49,23 @@ Prosjektet har nå:
 - Produkter
 - Lagerbevegelser
 - Innkjøpsordre med mottak
+- Salgsordre med ordrelinjer og statusflyt
 - Ledger for innkjøpskostnader
 - Audit log for viktige hendelser
 
-Siste funksjonelle flyt er:
+Siste innkjøpsflyt er:
 
 ```text
 Leverandør -> Produkt -> Innkjøpsordre -> Mottak -> Lager øker -> Ledger EXPENSE -> Audit log
 ```
+
+Salgsordre finnes nå som grunnmodul:
+
+```text
+Kunde -> Salgsordre -> Ordrelinjer -> CONFIRMED -> PAID
+```
+
+Shipping som trekker lager og lager `REVENUE` kommer i neste funksjonelle commit.
 
 ## Test i Swagger
 
@@ -74,8 +83,12 @@ Anbefalt testrekkefølge:
 4. Opprett innkjøpsordre med `POST /api/purchase-orders`
 5. Legg til ordrelinje med `POST /api/purchase-orders/{id}/items`
 6. Motta innkjøpsordre med `POST /api/purchase-orders/{id}/receive`
-7. Sjekk regnskap med `GET /api/ledger/summary`
-8. Sjekk hendelser med `GET /api/audit-logs`
+7. Opprett salgsordre med `POST /api/sales-orders`
+8. Legg til salgsordrelinje med `POST /api/sales-orders/{id}/items`
+9. Bekreft salgsordre med `PUT /api/sales-orders/{id}/status`
+10. Marker salgsordre som betalt med `PUT /api/sales-orders/{id}/status`
+11. Sjekk regnskap med `GET /api/ledger/summary`
+12. Sjekk hendelser med `GET /api/audit-logs`
 
 ## Eksempeldata
 
@@ -148,6 +161,43 @@ Når ordren mottas, skjer dette i én transaksjon:
 - Det opprettes `LedgerTransaction` av type `EXPENSE`
 - Det opprettes audit log
 - Samme ordre kan ikke mottas to ganger
+
+Opprett salgsordre:
+
+```json
+{
+  "customerName": "Ada Lovelace",
+  "customerEmail": "ada@example.com"
+}
+```
+
+Legg til salgsordrelinje:
+
+```json
+{
+  "productId": 1,
+  "quantity": 2,
+  "unitPrice": 899.00
+}
+```
+
+Bekreft salgsordren:
+
+```json
+{
+  "status": "CONFIRMED"
+}
+```
+
+Marker salgsordren som betalt:
+
+```json
+{
+  "status": "PAID"
+}
+```
+
+Ved bekreftelse sjekker systemet at produktene har nok lager. Salgsordrer kan ikke settes til `SHIPPED` via vanlig status-endepunkt; det kommer som egen shipping-workflow.
 
 ## PowerShell-eksempler
 
@@ -274,6 +324,17 @@ POST   /api/purchase-orders/{id}/receive
 DELETE /api/purchase-orders/{id}
 ```
 
+Salgsordre:
+
+```text
+GET    /api/sales-orders
+GET    /api/sales-orders/{id}
+POST   /api/sales-orders
+POST   /api/sales-orders/{id}/items
+PUT    /api/sales-orders/{id}/status
+DELETE /api/sales-orders/{id}
+```
+
 Ledger:
 
 ```text
@@ -348,6 +409,7 @@ src/main/java/com/stockflow
   ledger
   product
   purchaseorder
+  salesorder
   supplier
 ```
 
@@ -405,12 +467,11 @@ GitHub Actions kjører tester og build på push.
 
 Neste naturlige commits:
 
-1. `legg til salgsordre`
-2. `send salgsordre fra lager`
-3. `før inntekt i regnskap`
-4. `legg til månedlig rapport`
-5. `legg til innlogging`
-6. `legg til roller og tilgang`
+1. `send salgsordre fra lager`
+2. `før inntekt i regnskap`
+3. `legg til månedlig rapport`
+4. `legg til innlogging`
+5. `legg til roller og tilgang`
 
 ## Screenshots
 

@@ -1,0 +1,6 @@
+package com.stockflow.salesorder;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SalesOrderItemRepository extends JpaRepository<SalesOrderItem, Long> {
+}
