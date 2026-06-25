@@ -1,7 +1,11 @@
 package com.stockflow.salesorder;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ResourceNotFoundException;
+import com.stockflow.inventory.InventoryMovementService;
+import com.stockflow.inventory.MovementType;
 import com.stockflow.product.Product;
 import com.stockflow.product.ProductRepository;
 import com.stockflow.salesorder.dto.SalesOrderCreateRequest;
@@ -21,6 +25,8 @@ public class SalesOrderService {
 
     private final SalesOrderRepository salesOrderRepository;
     private final ProductRepository productRepository;
+    private final InventoryMovementService inventoryMovementService;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public List<SalesOrderResponse> findAll() {
@@ -88,6 +94,43 @@ public class SalesOrderService {
         }
 
         order.setStatus(newStatus);
+        return SalesOrderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public SalesOrderResponse ship(Long id) {
+        SalesOrder order = getSalesOrder(id);
+
+        if (order.getStatus() == SalesOrderStatus.SHIPPED) {
+            throw new BusinessRuleException("Sales order has already been shipped");
+        }
+        if (order.getStatus() == SalesOrderStatus.CANCELLED) {
+            throw new BusinessRuleException("Cancelled sales orders cannot be shipped");
+        }
+        if (order.getStatus() != SalesOrderStatus.PAID) {
+            throw new BusinessRuleException("Only PAID sales orders can be shipped");
+        }
+
+        ensureHasItems(order);
+        ensureEnoughStock(order);
+
+        for (SalesOrderItem item : order.getItems()) {
+            inventoryMovementService.recordMovement(
+                    item.getProduct(),
+                    MovementType.OUT,
+                    item.getQuantity(),
+                    "Sales order shipped: " + order.getId()
+            );
+        }
+
+        order.setStatus(SalesOrderStatus.SHIPPED);
+        auditLogService.record(
+                AuditAction.SALES_ORDER_SHIPPED,
+                "SalesOrder",
+                order.getId(),
+                "Sales order shipped and deducted from inventory"
+        );
+
         return SalesOrderMapper.toResponse(order);
     }
 

@@ -60,6 +60,12 @@ public class SalesOrderController {
         return salesOrderService.updateStatus(id, request);
     }
 
+    @PostMapping("/{id}/ship")
+    @Operation(summary = "Ship sales order and decrease stock")
+    public SalesOrderResponse ship(@PathVariable Long id) {
+        return salesOrderService.ship(id);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete sales order")

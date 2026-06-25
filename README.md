@@ -49,7 +49,7 @@ Prosjektet har nå:
 - Produkter
 - Lagerbevegelser
 - Innkjøpsordre med mottak
-- Salgsordre med ordrelinjer og statusflyt
+- Salgsordre med ordrelinjer, statusflyt og shipping
 - Ledger for innkjøpskostnader
 - Audit log for viktige hendelser
 
@@ -59,13 +59,13 @@ Siste innkjøpsflyt er:
 Leverandør -> Produkt -> Innkjøpsordre -> Mottak -> Lager øker -> Ledger EXPENSE -> Audit log
 ```
 
-Salgsordre finnes nå som grunnmodul:
+Salgsordre finnes nå med shipping:
 
 ```text
-Kunde -> Salgsordre -> Ordrelinjer -> CONFIRMED -> PAID
+Kunde -> Salgsordre -> Ordrelinjer -> CONFIRMED -> PAID -> SHIPPED -> Lager går ned
 ```
 
-Shipping som trekker lager og lager `REVENUE` kommer i neste funksjonelle commit.
+Ledger `REVENUE` for salg kommer i en egen commit etter shipping.
 
 ## Test i Swagger
 
@@ -87,8 +87,10 @@ Anbefalt testrekkefølge:
 8. Legg til salgsordrelinje med `POST /api/sales-orders/{id}/items`
 9. Bekreft salgsordre med `PUT /api/sales-orders/{id}/status`
 10. Marker salgsordre som betalt med `PUT /api/sales-orders/{id}/status`
-11. Sjekk regnskap med `GET /api/ledger/summary`
-12. Sjekk hendelser med `GET /api/audit-logs`
+11. Send salgsordre med `POST /api/sales-orders/{id}/ship`
+12. Sjekk lagerbevegelser med `GET /api/inventory/movements/product/{productId}`
+13. Sjekk regnskap med `GET /api/ledger/summary`
+14. Sjekk hendelser med `GET /api/audit-logs`
 
 ## Eksempeldata
 
@@ -197,7 +199,13 @@ Marker salgsordren som betalt:
 }
 ```
 
-Ved bekreftelse sjekker systemet at produktene har nok lager. Salgsordrer kan ikke settes til `SHIPPED` via vanlig status-endepunkt; det kommer som egen shipping-workflow.
+Send salgsordren:
+
+```text
+POST /api/sales-orders/1/ship
+```
+
+Ved bekreftelse og shipping sjekker systemet at produktene har nok lager. Shipping trekker lager med `InventoryMovement` av type `OUT`, setter ordren til `SHIPPED` og lager audit log. Salgsordrer kan ikke settes til `SHIPPED` via vanlig status-endepunkt.
 
 ## PowerShell-eksempler
 
@@ -332,6 +340,7 @@ GET    /api/sales-orders/{id}
 POST   /api/sales-orders
 POST   /api/sales-orders/{id}/items
 PUT    /api/sales-orders/{id}/status
+POST   /api/sales-orders/{id}/ship
 DELETE /api/sales-orders/{id}
 ```
 
@@ -467,11 +476,10 @@ GitHub Actions kjører tester og build på push.
 
 Neste naturlige commits:
 
-1. `send salgsordre fra lager`
-2. `før inntekt i regnskap`
-3. `legg til månedlig rapport`
-4. `legg til innlogging`
-5. `legg til roller og tilgang`
+1. `før inntekt i regnskap`
+2. `legg til månedlig rapport`
+3. `legg til innlogging`
+4. `legg til roller og tilgang`
 
 ## Screenshots
 

@@ -1,6 +1,10 @@
 package com.stockflow.salesorder;
 
+import com.stockflow.audit.AuditAction;
+import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
+import com.stockflow.inventory.InventoryMovementService;
+import com.stockflow.inventory.MovementType;
 import com.stockflow.product.Product;
 import com.stockflow.product.ProductRepository;
 import com.stockflow.salesorder.dto.SalesOrderCreateRequest;
@@ -20,6 +24,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,6 +38,12 @@ class SalesOrderServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private InventoryMovementService inventoryMovementService;
+
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private SalesOrderService salesOrderService;
@@ -167,6 +181,96 @@ class SalesOrderServiceTest {
         ))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("ship workflow");
+    }
+
+    @Test
+    void shippingPaidSalesOrderDecreasesStockAndMarksOrderAsShipped() {
+        Product product = product(10);
+        SalesOrder order = salesOrderWithItem(product, 3);
+        order.setStatus(SalesOrderStatus.PAID);
+        when(salesOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+        when(inventoryMovementService.recordMovement(
+                same(product),
+                eq(MovementType.OUT),
+                eq(3),
+                eq("Sales order shipped: 10")
+        )).thenAnswer(invocation -> {
+            product.setQuantity(product.getQuantity() - 3);
+            return null;
+        });
+
+        SalesOrderResponse response = salesOrderService.ship(10L);
+
+        assertThat(response.status()).isEqualTo(SalesOrderStatus.SHIPPED);
+        assertThat(product.getQuantity()).isEqualTo(7);
+        verify(inventoryMovementService).recordMovement(
+                same(product),
+                eq(MovementType.OUT),
+                eq(3),
+                eq("Sales order shipped: 10")
+        );
+        verify(auditLogService).record(
+                AuditAction.SALES_ORDER_SHIPPED,
+                "SalesOrder",
+                10L,
+                "Sales order shipped and deducted from inventory"
+        );
+    }
+
+    @Test
+    void cannotShipSalesOrderTwice() {
+        SalesOrder order = salesOrderWithItem(product(10), 3);
+        order.setStatus(SalesOrderStatus.SHIPPED);
+        when(salesOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> salesOrderService.ship(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("already been shipped");
+
+        verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(auditLogService, never()).record(any(), any(), any(), any());
+    }
+
+    @Test
+    void cannotShipCancelledSalesOrder() {
+        SalesOrder order = salesOrderWithItem(product(10), 3);
+        order.setStatus(SalesOrderStatus.CANCELLED);
+        when(salesOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> salesOrderService.ship(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("Cancelled");
+
+        verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(auditLogService, never()).record(any(), any(), any(), any());
+    }
+
+    @Test
+    void cannotShipUnpaidSalesOrder() {
+        SalesOrder order = salesOrderWithItem(product(10), 3);
+        order.setStatus(SalesOrderStatus.CONFIRMED);
+        when(salesOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> salesOrderService.ship(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("PAID");
+
+        verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(auditLogService, never()).record(any(), any(), any(), any());
+    }
+
+    @Test
+    void cannotShipSalesOrderWithoutEnoughStock() {
+        SalesOrder order = salesOrderWithItem(product(2), 3);
+        order.setStatus(SalesOrderStatus.PAID);
+        when(salesOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> salesOrderService.ship(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("Not enough stock");
+
+        verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
     private SalesOrder salesOrder() {
