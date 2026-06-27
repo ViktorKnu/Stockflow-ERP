@@ -73,8 +73,24 @@ public class LedgerService {
                                                    String description,
                                                    LedgerSourceType sourceType,
                                                    Long sourceId) {
+        return recordTransaction(LedgerTransactionType.EXPENSE, amount, description, sourceType, sourceId);
+    }
+
+    @Transactional
+    public LedgerTransactionResponse recordRevenue(BigDecimal amount,
+                                                   String description,
+                                                   LedgerSourceType sourceType,
+                                                   Long sourceId) {
+        return recordTransaction(LedgerTransactionType.REVENUE, amount, description, sourceType, sourceId);
+    }
+
+    private LedgerTransactionResponse recordTransaction(LedgerTransactionType type,
+                                                        BigDecimal amount,
+                                                        String description,
+                                                        LedgerSourceType sourceType,
+                                                        Long sourceId) {
         LedgerTransaction transaction = LedgerTransaction.builder()
-                .type(LedgerTransactionType.EXPENSE)
+                .type(type)
                 .amount(amount)
                 .currency(DEFAULT_CURRENCY)
                 .description(description)

@@ -41,7 +41,7 @@ Salgsordre til kunder. Ordren kan bekreftes, betales og sendes. Når den sendes,
 
 `ledger`
 
-En enkel økonomilog. Så langt brukes den for innkjøpskostnader.
+En enkel økonomilog for innkjøpskostnader og salgsinntekter.
 
 `audit`
 

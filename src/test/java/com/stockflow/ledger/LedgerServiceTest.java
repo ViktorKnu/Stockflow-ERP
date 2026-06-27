@@ -62,6 +62,36 @@ class LedgerServiceTest {
     }
 
     @Test
+    void canRecordRevenueTransaction() {
+        when(ledgerTransactionRepository.save(any(LedgerTransaction.class))).thenAnswer(invocation -> {
+            LedgerTransaction transaction = invocation.getArgument(0);
+            transaction.setId(2L);
+            transaction.setCreatedAt(LocalDateTime.of(2026, 6, 11, 12, 0));
+            return transaction;
+        });
+
+        LedgerTransactionResponse response = ledgerService.recordRevenue(
+                new BigDecimal("1798.00"),
+                "Sales order shipped: 20",
+                LedgerSourceType.SALES_ORDER,
+                20L
+        );
+
+        assertThat(response.id()).isEqualTo(2L);
+        assertThat(response.type()).isEqualTo(LedgerTransactionType.REVENUE);
+        assertThat(response.amount()).isEqualByComparingTo("1798.00");
+        assertThat(response.currency()).isEqualTo("NOK");
+        assertThat(response.sourceType()).isEqualTo(LedgerSourceType.SALES_ORDER);
+        assertThat(response.sourceId()).isEqualTo(20L);
+        verify(auditLogService).record(
+                AuditAction.LEDGER_TRANSACTION_CREATED,
+                "LedgerTransaction",
+                2L,
+                "Ledger transaction REVENUE recorded for SALES_ORDER 20"
+        );
+    }
+
+    @Test
     void calculatesRevenueExpensesAndNetProfit() {
         when(ledgerTransactionRepository.findAll()).thenReturn(List.of(
                 transaction(LedgerTransactionType.REVENUE, "1200.00"),

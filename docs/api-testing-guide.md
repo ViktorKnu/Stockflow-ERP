@@ -211,12 +211,14 @@ Send ordren:
 POST /api/sales-orders/1/ship
 ```
 
-Nå skal lageret gå ned, og audit log skal få `SALES_ORDER_SHIPPED`.
+Nå skal lageret gå ned, ledger skal få en `REVENUE`, og audit log skal få `SALES_ORDER_SHIPPED`.
 
 Sjekk:
 
 ```text
 GET /api/inventory/movements/product/1
+GET /api/ledger/transactions
+GET /api/ledger/summary
 GET /api/audit-logs
 ```
 
@@ -227,3 +229,5 @@ GET /api/audit-logs
 - Du kan ikke trekke mer fra lager enn produktet har
 - Mottak av innkjøpsordre øker lager
 - Shipping av salgsordre senker lager
+- Mottak av innkjøpsordre lager `EXPENSE`
+- Shipping av salgsordre lager `REVENUE`

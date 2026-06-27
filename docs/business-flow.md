@@ -43,6 +43,7 @@ Når salgsordren sendes, gjør systemet dette:
 - Sjekker at ordren er `PAID`
 - Sjekker at produktene fortsatt finnes på lager
 - Trekker lager med `InventoryMovement` type `OUT`
+- Lager en ledger-transaksjon med type `REVENUE`
 - Setter salgsordren til `SHIPPED`
 - Lager audit log
 
@@ -69,9 +70,12 @@ Dette gjør at man ikke bare ser hva lageret er nå, men også hvorfor det endre
 
 Ledger er en enkel økonomilogg.
 
-Så langt lager systemet `EXPENSE` når en innkjøpsordre mottas.
+Systemet lager:
 
-Neste steg er å lage `REVENUE` når en salgsordre sendes eller betales.
+- `EXPENSE` når en innkjøpsordre mottas
+- `REVENUE` når en salgsordre sendes
+
+`GET /api/ledger/summary` summerer inntekter, kostnader og resultat.
 
 ## Audit log
 

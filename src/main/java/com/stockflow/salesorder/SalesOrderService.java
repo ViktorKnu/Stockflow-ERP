@@ -6,6 +6,8 @@ import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.inventory.InventoryMovementService;
 import com.stockflow.inventory.MovementType;
+import com.stockflow.ledger.LedgerService;
+import com.stockflow.ledger.LedgerSourceType;
 import com.stockflow.product.Product;
 import com.stockflow.product.ProductRepository;
 import com.stockflow.salesorder.dto.SalesOrderCreateRequest;
@@ -26,6 +28,7 @@ public class SalesOrderService {
     private final SalesOrderRepository salesOrderRepository;
     private final ProductRepository productRepository;
     private final InventoryMovementService inventoryMovementService;
+    private final LedgerService ledgerService;
     private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
@@ -122,6 +125,13 @@ public class SalesOrderService {
                     "Sales order shipped: " + order.getId()
             );
         }
+
+        ledgerService.recordRevenue(
+                order.getTotalAmount(),
+                "Sales order shipped: " + order.getId(),
+                LedgerSourceType.SALES_ORDER,
+                order.getId()
+        );
 
         order.setStatus(SalesOrderStatus.SHIPPED);
         auditLogService.record(

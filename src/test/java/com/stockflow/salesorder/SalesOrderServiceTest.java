@@ -5,6 +5,8 @@ import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.inventory.InventoryMovementService;
 import com.stockflow.inventory.MovementType;
+import com.stockflow.ledger.LedgerService;
+import com.stockflow.ledger.LedgerSourceType;
 import com.stockflow.product.Product;
 import com.stockflow.product.ProductRepository;
 import com.stockflow.salesorder.dto.SalesOrderCreateRequest;
@@ -41,6 +43,9 @@ class SalesOrderServiceTest {
 
     @Mock
     private InventoryMovementService inventoryMovementService;
+
+    @Mock
+    private LedgerService ledgerService;
 
     @Mock
     private AuditLogService auditLogService;
@@ -209,6 +214,12 @@ class SalesOrderServiceTest {
                 eq(3),
                 eq("Sales order shipped: 10")
         );
+        verify(ledgerService).recordRevenue(
+                eq(new BigDecimal("450.00")),
+                eq("Sales order shipped: 10"),
+                eq(LedgerSourceType.SALES_ORDER),
+                eq(10L)
+        );
         verify(auditLogService).record(
                 AuditAction.SALES_ORDER_SHIPPED,
                 "SalesOrder",
@@ -228,6 +239,7 @@ class SalesOrderServiceTest {
                 .hasMessageContaining("already been shipped");
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(ledgerService, never()).recordRevenue(any(), any(), any(), any());
         verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
@@ -242,6 +254,7 @@ class SalesOrderServiceTest {
                 .hasMessageContaining("Cancelled");
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(ledgerService, never()).recordRevenue(any(), any(), any(), any());
         verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
@@ -256,6 +269,7 @@ class SalesOrderServiceTest {
                 .hasMessageContaining("PAID");
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(ledgerService, never()).recordRevenue(any(), any(), any(), any());
         verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
@@ -270,6 +284,7 @@ class SalesOrderServiceTest {
                 .hasMessageContaining("Not enough stock");
 
         verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(ledgerService, never()).recordRevenue(any(), any(), any(), any());
         verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 

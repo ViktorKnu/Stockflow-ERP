@@ -70,7 +70,7 @@ Leverandør -> Produkt -> Innkjøpsordre -> Mottak -> Lager øker -> Ledger EXPE
 Salg:
 
 ```text
-Produkt på lager -> Salgsordre -> Betalt -> Sendt -> Lager går ned -> Audit log
+Produkt på lager -> Salgsordre -> Betalt -> Sendt -> Lager går ned -> Ledger REVENUE -> Audit log
 ```
 
 Når lageret endres, lagres det alltid som en lagerbevegelse. Det gjør at man kan se hva beholdningen var før og etter en operasjon.
@@ -85,15 +85,13 @@ Når en viktig handling skjer, for eksempel at en innkjøpsordre mottas eller en
 - Lagerbevegelser med `IN`, `OUT` og `ADJUSTMENT`
 - Innkjøpsordre med mottak
 - Salgsordre med betaling og shipping
-- Ledger for innkjøpskostnader
+- Ledger for innkjøpskostnader og salgsinntekter
 - Audit log
 - Swagger/OpenAPI
 - PostgreSQL med Flyway-migrasjoner
 - Docker Compose
 - Unit-tester
 - GitHub Actions
-
-Ledger-inntekt for salg kommer i neste funksjonelle commit.
 
 ## Hvor starter jeg?
 
@@ -115,6 +113,7 @@ Anbefalt rekkefølge:
 8. Sett salgsordren til `PAID`
 9. Send salgsordren med `/ship`
 10. Se at lageret går ned
+11. Se at ledger får en `REVENUE`
 
 Mer detaljert testguide ligger her:
 
