@@ -222,6 +222,22 @@ GET /api/ledger/summary
 GET /api/audit-logs
 ```
 
+## 6. Se månedsrapporten
+
+Finn `GET /api/ledger/summary/monthly` under `ledger-controller` i Swagger.
+
+Trykk **Try it out**. La `year` stå tomt for å se alle måneder, eller skriv inn for eksempel
+`2026` for å se bare det året. Trykk deretter **Execute**.
+
+Det samme kallet kan åpnes direkte i nettleseren:
+
+```text
+http://localhost:8080/api/ledger/summary/monthly?year=2026
+```
+
+Hver måned viser summen av `REVENUE`, summen av `EXPENSE`, resultatet og antall transaksjoner.
+Måneder uten transaksjoner vises ikke.
+
 ## Vanlige ting å se etter
 
 - Du kan ikke sende en salgsordre før den er `PAID`

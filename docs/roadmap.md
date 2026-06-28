@@ -19,16 +19,17 @@ Dette er planen videre. Målet er små commits som kan testes én og én.
 - Salgsordre
 - Shipping av salgsordre
 - Ledger `REVENUE` for salg
+- Månedsrapport med valgfritt årsfilter
 
 ## Neste commits
 
-1. `legg til månedlig rapport`
+1. `legg til brukere`
 
-   Ledger skal kunne vise inntekter, kostnader og resultat per måned.
+   Opprett brukermodellen og lagring av brukere som grunnlag for innlogging.
 
 2. `legg til innlogging`
 
-   Legg til brukere, passordhashing og login.
+   Legg til passordhashing, registrering og login med JWT.
 
 3. `legg til roller og tilgang`
 

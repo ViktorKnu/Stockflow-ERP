@@ -116,7 +116,7 @@ class LedgerServiceTest {
 
         when(ledgerTransactionRepository.findAll()).thenReturn(List.of(juneExpense, mayRevenue));
 
-        var response = ledgerService.monthlySummary();
+        var response = ledgerService.monthlySummary(null);
 
         assertThat(response).hasSize(2);
         assertThat(response.get(0).month()).isEqualTo("2026-06");
@@ -124,6 +124,23 @@ class LedgerServiceTest {
         assertThat(response.get(0).netProfit()).isEqualByComparingTo("-250.00");
         assertThat(response.get(1).month()).isEqualTo("2026-05");
         assertThat(response.get(1).totalRevenue()).isEqualByComparingTo("900.00");
+    }
+
+    @Test
+    void monthlySummaryCanBeFilteredByYear() {
+        LocalDateTime startOf2026 = LocalDateTime.of(2026, 1, 1, 0, 0);
+        LedgerTransaction juneRevenue = transaction(LedgerTransactionType.REVENUE, "1500.00");
+
+        when(ledgerTransactionRepository.findAllByCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                startOf2026,
+                startOf2026.plusYears(1)
+        )).thenReturn(List.of(juneRevenue));
+
+        var response = ledgerService.monthlySummary(2026);
+
+        assertThat(response).hasSize(1);
+        assertThat(response.getFirst().month()).isEqualTo("2026-06");
+        assertThat(response.getFirst().totalRevenue()).isEqualByComparingTo("1500.00");
     }
 
     private LedgerTransaction transaction(LedgerTransactionType type, String amount) {

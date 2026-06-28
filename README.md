@@ -210,6 +210,7 @@ GET /api/ledger/transactions
 GET /api/ledger/transactions/{id}
 GET /api/ledger/summary
 GET /api/ledger/summary/monthly
+GET /api/ledger/summary/monthly?year=2026
 ```
 
 Audit logs:

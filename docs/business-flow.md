@@ -77,6 +77,9 @@ Systemet lager:
 
 `GET /api/ledger/summary` summerer inntekter, kostnader og resultat.
 
+`GET /api/ledger/summary/monthly` deler de samme tallene opp per måned. Legg til for eksempel
+`?year=2026` for å begrense rapporten til ett år.
+
 ## Audit log
 
 Audit log er en lesbar historikk over viktige handlinger.

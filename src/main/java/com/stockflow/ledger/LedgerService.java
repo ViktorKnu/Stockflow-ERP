@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.List;
@@ -45,8 +46,12 @@ public class LedgerService {
     }
 
     @Transactional(readOnly = true)
-    public List<MonthlyLedgerSummaryResponse> monthlySummary() {
-        Map<YearMonth, List<LedgerTransaction>> byMonth = ledgerTransactionRepository.findAll().stream()
+    public List<MonthlyLedgerSummaryResponse> monthlySummary(Integer year) {
+        List<LedgerTransaction> transactions = year == null
+                ? ledgerTransactionRepository.findAll()
+                : findTransactionsForYear(year);
+
+        Map<YearMonth, List<LedgerTransaction>> byMonth = transactions.stream()
                 .collect(java.util.stream.Collectors.groupingBy(
                         transaction -> YearMonth.from(transaction.getCreatedAt()),
                         TreeMap::new,
@@ -66,6 +71,14 @@ public class LedgerService {
                     );
                 })
                 .toList();
+    }
+
+    private List<LedgerTransaction> findTransactionsForYear(int year) {
+        LocalDateTime from = LocalDateTime.of(year, 1, 1, 0, 0);
+        return ledgerTransactionRepository.findAllByCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                from,
+                from.plusYears(1)
+        );
     }
 
     @Transactional
