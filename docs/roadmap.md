@@ -20,22 +20,19 @@ Dette er planen videre. Målet er små commits som kan testes én og én.
 - Shipping av salgsordre
 - Ledger `REVENUE` for salg
 - Månedsrapport med valgfritt årsfilter
+- Brukere med unik e-post, rolle og hashet passord
 
 ## Neste commits
 
-1. `legg til brukere`
+1. `legg til innlogging`
 
-   Opprett brukermodellen og lagring av brukere som grunnlag for innlogging.
+   Sjekk e-post og passord, og returner JWT ved gyldig login.
 
-2. `legg til innlogging`
-
-   Legg til passordhashing, registrering og login med JWT.
-
-3. `legg til roller og tilgang`
+2. `legg til roller og tilgang`
 
    Innfør `ADMIN`, `MANAGER` og `EMPLOYEE`.
 
-4. `legg til integrasjonstester`
+3. `legg til integrasjonstester`
 
    Test API og database sammen med Testcontainers.
 

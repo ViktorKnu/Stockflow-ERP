@@ -87,6 +87,7 @@ Når en viktig handling skjer, for eksempel at en innkjøpsordre mottas eller en
 - Salgsordre med betaling og shipping
 - Ledger for innkjøpskostnader og salgsinntekter
 - Audit log
+- Brukere med unik e-post og BCrypt-hashet passord
 - Swagger/OpenAPI
 - PostgreSQL med Flyway-migrasjoner
 - Docker Compose
@@ -221,6 +222,16 @@ GET /api/audit-logs/{id}
 GET /api/audit-logs/entity/{entityType}/{entityId}
 ```
 
+Brukere:
+
+```text
+GET  /api/users
+GET  /api/users/{id}
+POST /api/users
+```
+
+JWT-innlogging er neste steg. Brukerendepunktene er derfor ikke tilgangsbeskyttet ennå.
+
 ## Prosjektstruktur
 
 Koden er delt etter funksjon, ikke etter teknisk lag:
@@ -236,6 +247,7 @@ src/main/java/com/stockflow
   purchaseorder
   salesorder
   supplier
+  user
 ```
 
 Eksempel: alt som hører til produkter ligger i `product`, og alt som hører til salgsordre ligger i `salesorder`.
@@ -251,6 +263,7 @@ Se mer her:
 - Spring Web
 - Spring Data JPA
 - Spring Validation
+- BCrypt passordhashing
 - PostgreSQL
 - Flyway
 - Docker og Docker Compose

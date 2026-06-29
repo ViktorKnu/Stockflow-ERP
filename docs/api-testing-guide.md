@@ -238,6 +238,30 @@ http://localhost:8080/api/ledger/summary/monthly?year=2026
 Hver måned viser summen av `REVENUE`, summen av `EXPENSE`, resultatet og antall transaksjoner.
 Måneder uten transaksjoner vises ikke.
 
+## 7. Opprett en bruker
+
+Finn `POST /api/users` under `user-controller` i Swagger og bruk:
+
+```json
+{
+  "name": "Kari Nordmann",
+  "email": "kari@example.com",
+  "password": "hemmelig123"
+}
+```
+
+Responsen skal ha rollen `EMPLOYEE`. Passordet og den lagrede passordhashen skal ikke være med i responsen.
+
+Sjekk brukeren med:
+
+```text
+GET /api/users
+GET /api/users/1
+```
+
+Prøver du samme e-post en gang til, skal API-et svare med HTTP `409 Conflict`.
+Innlogging og tilgangsbeskyttelse kommer i neste steg.
+
 ## Vanlige ting å se etter
 
 - Du kan ikke sende en salgsordre før den er `PAID`
@@ -247,3 +271,5 @@ Måneder uten transaksjoner vises ikke.
 - Shipping av salgsordre senker lager
 - Mottak av innkjøpsordre lager `EXPENSE`
 - Shipping av salgsordre lager `REVENUE`
+- Nye brukere får rollen `EMPLOYEE`
+- Samme e-post kan ikke registreres to ganger

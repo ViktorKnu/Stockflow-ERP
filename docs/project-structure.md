@@ -15,6 +15,7 @@ src/main/java/com/stockflow
   purchaseorder
   salesorder
   supplier
+  user
 ```
 
 ## Hva de ulike mappene gjør
@@ -46,6 +47,10 @@ En enkel økonomilog for innkjøpskostnader og salgsinntekter.
 `audit`
 
 Read-only logg over viktige hendelser i systemet.
+
+`user`
+
+Brukerkontoer med unik e-post, rolle og hashet passord. JWT-innlogging legges til i neste steg.
 
 `exception`
 
@@ -95,6 +100,7 @@ Eksempler:
 - `V2__create_products_table.sql`
 - `V7__create_sales_orders_tables.sql`
 - `V8__add_sales_order_shipped_audit_action.sql`
+- `V9__create_users_table.sql`
 
 Hibernate validerer skjemaet, men Flyway lager tabellene.
 
