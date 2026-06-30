@@ -19,6 +19,8 @@ Kjør prosjektet:
 ```powershell
 git clone https://github.com/ViktorKnu/Stockflow-ERP.git
 cd Stockflow-ERP
+Copy-Item .env.example .env
+# Fyll inn STOCKFLOW_JWT_SECRET og STOCKFLOW_ADMIN_PASSWORD i .env
 docker compose up --build
 ```
 
@@ -135,6 +137,49 @@ Health:       http://localhost:8080/actuator/health
 OpenAPI JSON: http://localhost:8080/v3/api-docs
 ```
 
+## Innlogging og tilgang
+
+API-et bruker stateless JWT-innlogging. Før første oppstart må `.env` inneholde:
+
+```dotenv
+STOCKFLOW_JWT_SECRET=<minst 32 tilfeldige tegn>
+STOCKFLOW_ADMIN_EMAIL=admin@stockflow.local
+STOCKFLOW_ADMIN_PASSWORD=<et sterkt passord>
+```
+
+Du kan generere en JWT-hemmelighet i PowerShell:
+
+```powershell
+$bytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+[Convert]::ToBase64String($bytes)
+```
+
+Logg inn med administratoren:
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@stockflow.local",
+  "password": "passordet-fra-env-filen"
+}
+```
+
+Responsen inneholder `accessToken`. I Swagger trykker du **Authorize** og limer inn tokenet. For andre klienter sender du:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+Tilgangsmodellen er:
+
+- `EMPLOYEE`: lesetilgang til leverandører, produkter, lager og ordre
+- `MANAGER`: samme lesetilgang, alle skrivende ERP-operasjoner, ledger og audit log
+- `ADMIN`: full tilgang, inkludert brukeradministrasjon
+- Swagger, OpenAPI, health og innlogging er offentlige
+
 PostgreSQL kjører lokalt på:
 
 ```text
@@ -230,7 +275,8 @@ GET  /api/users/{id}
 POST /api/users
 ```
 
-JWT-innlogging er neste steg. Brukerendepunktene er derfor ikke tilgangsbeskyttet ennå.
+`POST /api/users` kan ta et valgfritt `role`-felt. Uten feltet opprettes brukeren som `EMPLOYEE`.
+Alle brukerendepunkter krever `ADMIN`.
 
 ## Prosjektstruktur
 
@@ -239,6 +285,7 @@ Koden er delt etter funksjon, ikke etter teknisk lag:
 ```text
 src/main/java/com/stockflow
   audit
+  auth
   config
   exception
   inventory
@@ -264,6 +311,7 @@ Se mer her:
 - Spring Data JPA
 - Spring Validation
 - BCrypt passordhashing
+- Spring Security med JWT og rollebasert tilgang
 - PostgreSQL
 - Flyway
 - Docker og Docker Compose

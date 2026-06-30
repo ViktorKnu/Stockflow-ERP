@@ -45,7 +45,7 @@ public class UserService {
                 .name(request.name().trim())
                 .email(email)
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .role(UserRole.EMPLOYEE)
+                .role(request.role() == null ? UserRole.EMPLOYEE : request.role())
                 .build();
 
         User savedUser = userRepository.save(user);

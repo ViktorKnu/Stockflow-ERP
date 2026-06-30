@@ -4,6 +4,9 @@ import com.stockflow.audit.dto.AuditLogResponse;
 import com.stockflow.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -39,7 +42,7 @@ public class AuditLogService {
     @Transactional
     public AuditLogResponse record(AuditAction action, String entityType, Long entityId, String description) {
         AuditLog auditLog = AuditLog.builder()
-                .actor(SYSTEM_ACTOR)
+                .actor(currentActor())
                 .action(action)
                 .entityType(entityType)
                 .entityId(entityId)
@@ -47,5 +50,15 @@ public class AuditLogService {
                 .build();
 
         return AuditLogMapper.toResponse(auditLogRepository.save(auditLog));
+    }
+
+    private String currentActor() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return SYSTEM_ACTOR;
+        }
+        return authentication.getName();
     }
 }

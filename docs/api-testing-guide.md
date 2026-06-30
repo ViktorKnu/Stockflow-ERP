@@ -14,6 +14,21 @@ docker compose up --build
 http://localhost:8080/swagger-ui.html
 ```
 
+Før du tester de beskyttede endepunktene, logg inn med bootstrap-administratoren fra `.env`:
+
+```text
+POST /api/auth/login
+```
+
+```json
+{
+  "email": "admin@stockflow.local",
+  "password": "passordet-fra-env-filen"
+}
+```
+
+Kopier `accessToken` fra responsen. Trykk **Authorize** øverst i Swagger og lim inn tokenet.
+
 I Swagger åpner du et endepunkt, trykker `Try it out`, fyller inn JSON og trykker `Execute`.
 
 Guiden antar at du starter med tom database. Hvis du allerede har testdata, kan `id`-ene være annerledes. Bruk da `id`-en du får tilbake i responsen fra API-et.
@@ -250,7 +265,8 @@ Finn `POST /api/users` under `user-controller` i Swagger og bruk:
 }
 ```
 
-Responsen skal ha rollen `EMPLOYEE`. Passordet og den lagrede passordhashen skal ikke være med i responsen.
+Responsen skal ha rollen `EMPLOYEE` når `role` utelates. En administrator kan også sende
+`"role": "MANAGER"` eller `"role": "ADMIN"`. Passordet og den lagrede passordhashen skal ikke være med i responsen.
 
 Sjekk brukeren med:
 
@@ -260,7 +276,7 @@ GET /api/users/1
 ```
 
 Prøver du samme e-post en gang til, skal API-et svare med HTTP `409 Conflict`.
-Innlogging og tilgangsbeskyttelse kommer i neste steg.
+Brukerendepunktene krever rollen `ADMIN`.
 
 ## Vanlige ting å se etter
 

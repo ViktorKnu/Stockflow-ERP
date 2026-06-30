@@ -37,7 +37,7 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create employee user")
+    @Operation(summary = "Create user")
     public UserResponse create(@Valid @RequestBody UserCreateRequest request) {
         return userService.create(request);
     }

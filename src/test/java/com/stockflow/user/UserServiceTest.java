@@ -79,6 +79,29 @@ class UserServiceTest {
     }
 
     @Test
+    void adminCanChooseRoleWhenCreatingUser() {
+        UserCreateRequest request = new UserCreateRequest(
+                "Ola Leder",
+                "ola@example.com",
+                "hemmelig123",
+                UserRole.MANAGER
+        );
+        when(userRepository.existsByEmailIgnoreCase("ola@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("hemmelig123")).thenReturn("bcrypt-hash");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(2L);
+            user.setCreatedAt(LocalDateTime.of(2026, 6, 30, 10, 0));
+            user.setUpdatedAt(LocalDateTime.of(2026, 6, 30, 10, 0));
+            return user;
+        });
+
+        UserResponse response = userService.create(request);
+
+        assertThat(response.role()).isEqualTo(UserRole.MANAGER);
+    }
+
+    @Test
     void cannotCreateUserWithDuplicateEmail() {
         UserCreateRequest request = new UserCreateRequest(
                 "Kari Nordmann",

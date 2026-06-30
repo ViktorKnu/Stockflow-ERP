@@ -36,3 +36,14 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
+
+stockflow:
+  security:
+    jwt:
+      secret: ${STOCKFLOW_JWT_SECRET:}
+      issuer: ${STOCKFLOW_JWT_ISSUER:stockflow-erp-api}
+      ttl: ${STOCKFLOW_JWT_TTL:PT8H}
+    bootstrap-admin:
+      name: ${STOCKFLOW_ADMIN_NAME:StockFlow Admin}
+      email: ${STOCKFLOW_ADMIN_EMAIL:}
+      password: ${STOCKFLOW_ADMIN_PASSWORD:}
