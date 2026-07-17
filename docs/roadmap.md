@@ -25,6 +25,7 @@ Dette er planen videre. Målet er små commits som kan testes én og én.
 - Rollebasert tilgang for `ADMIN`, `MANAGER` og `EMPLOYEE`
 - Bootstrap av første administrator fra miljøvariabler
 - Integrasjonstest av autentisert innkjøpsflyt mot PostgreSQL med Testcontainers
+- Valgfri demo-data gjennom Spring-profilen `demo`
 
 ## Neste commits
 
@@ -32,7 +33,6 @@ Ingen planlagte commits akkurat nå.
 
 ## Senere forbedringer
 
-- Demo-data
 - Postman collection
 - Bedre feilkoder i enkelte workflows
 - Request correlation ID

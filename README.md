@@ -52,6 +52,16 @@ Forventet svar:
 
 Stopp appen med `Ctrl + C`.
 
+Vil du starte med eksempeldata, sett denne verdien i `.env` før oppstart:
+
+```dotenv
+SPRING_PROFILES_ACTIVE=demo
+```
+
+Demo-profilen legger inn to leverandører, tre produkter med lagerhistorikk,
+en innkjøpsordre og en salgsordre. Dataene lastes idempotent og påvirker ikke
+vanlig oppstart når profilen er tom.
+
 Start helt på nytt med tom database:
 
 ```powershell
@@ -95,6 +105,7 @@ Når en viktig handling skjer, for eksempel at en innkjøpsordre mottas eller en
 - Docker Compose
 - Unit-tester
 - GitHub Actions
+- Valgfri demo-data med Spring-profilen `demo`
 
 ## Hvor starter jeg?
 
