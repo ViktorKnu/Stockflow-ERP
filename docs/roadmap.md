@@ -24,12 +24,11 @@ Dette er planen videre. Målet er små commits som kan testes én og én.
 - JWT-innlogging
 - Rollebasert tilgang for `ADMIN`, `MANAGER` og `EMPLOYEE`
 - Bootstrap av første administrator fra miljøvariabler
+- Integrasjonstest av autentisert innkjøpsflyt mot PostgreSQL med Testcontainers
 
 ## Neste commits
 
-1. `legg til integrasjonstester`
-
-   Test API og database sammen med Testcontainers.
+Ingen planlagte commits akkurat nå.
 
 ## Senere forbedringer
 
