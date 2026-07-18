@@ -133,12 +133,23 @@ Mer detaljert testguide ligger her:
 
 [docs/api-testing-guide.md](docs/api-testing-guide.md)
 
+### Postman
+
+Importer denne filen i Postman:
+
+[postman/StockFlow-ERP.postman_collection.json](postman/StockFlow-ERP.postman_collection.json)
+
+Sett collection-variabelen `adminPassword` til administratorpassordet fra `.env`,
+og kjør deretter hele samlingen i oppgitt rekkefølge. Innloggingen lagrer JWT,
+mens opprettingskallene lagrer nødvendige ID-er automatisk.
+
 ## Dokumentasjon
 
 - [Forretningsflyt](docs/business-flow.md)
 - [API-testguide](docs/api-testing-guide.md)
 - [Prosjektstruktur](docs/project-structure.md)
 - [Roadmap](docs/roadmap.md)
+- [Postman-samling](postman/StockFlow-ERP.postman_collection.json)
 
 ## Viktige lokale URL-er
 

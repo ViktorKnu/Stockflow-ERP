@@ -26,6 +26,7 @@ Dette er planen videre. Målet er små commits som kan testes én og én.
 - Bootstrap av første administrator fra miljøvariabler
 - Integrasjonstest av autentisert innkjøpsflyt mot PostgreSQL med Testcontainers
 - Valgfri demo-data gjennom Spring-profilen `demo`
+- Postman-samling med automatisert ERP-flyt
 
 ## Neste commits
 
@@ -33,7 +34,6 @@ Ingen planlagte commits akkurat nå.
 
 ## Senere forbedringer
 
-- Postman collection
 - Bedre feilkoder i enkelte workflows
 - Request correlation ID
 - Mer komplett ledger for salg, refusjoner og justeringer
