@@ -7,16 +7,17 @@ public record ApiError(
         Instant timestamp,
         int status,
         String error,
+        ApiErrorCode code,
         String message,
         String path,
         Map<String, String> validationErrors
 ) {
-    public static ApiError of(int status, String error, String message, String path) {
-        return new ApiError(Instant.now(), status, error, message, path, Map.of());
+    public static ApiError of(int status, String error, ApiErrorCode code, String message, String path) {
+        return new ApiError(Instant.now(), status, error, code, message, path, Map.of());
     }
 
-    public static ApiError validation(int status, String error, String message, String path,
+    public static ApiError validation(int status, String error, ApiErrorCode code, String message, String path,
                                       Map<String, String> validationErrors) {
-        return new ApiError(Instant.now(), status, error, message, path, validationErrors);
+        return new ApiError(Instant.now(), status, error, code, message, path, validationErrors);
     }
 }

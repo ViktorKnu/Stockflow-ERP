@@ -1,6 +1,7 @@
 package com.stockflow.supplier;
 
 import com.stockflow.exception.BusinessRuleException;
+import com.stockflow.exception.ApiErrorCode;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.product.ProductMapper;
 import com.stockflow.product.ProductRepository;
@@ -59,7 +60,9 @@ public class SupplierService {
     public void delete(Long id) {
         Supplier supplier = getSupplier(id);
         if (productRepository.existsBySupplierId(id)) {
-            throw new BusinessRuleException("Supplier cannot be deleted while products depend on it");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SUPPLIER_HAS_PRODUCTS,
+                    "Supplier cannot be deleted while products depend on it");
         }
         supplierRepository.delete(supplier);
     }

@@ -3,6 +3,7 @@ package com.stockflow.salesorder;
 import com.stockflow.audit.AuditAction;
 import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
+import com.stockflow.exception.ApiErrorCode;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.inventory.InventoryMovementService;
 import com.stockflow.inventory.MovementType;
@@ -80,20 +81,28 @@ public class SalesOrderService {
         SalesOrderStatus newStatus = request.status();
 
         if (newStatus == SalesOrderStatus.SHIPPED) {
-            throw new BusinessRuleException("Use the ship workflow to mark a sales order as shipped");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_SHIP_WORKFLOW_REQUIRED,
+                    "Use the ship workflow to mark a sales order as shipped");
         }
         if (order.getStatus() == SalesOrderStatus.CANCELLED) {
-            throw new BusinessRuleException("Cancelled sales orders cannot change status");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_CANCELLED,
+                    "Cancelled sales orders cannot change status");
         }
         if (order.getStatus() == SalesOrderStatus.SHIPPED) {
-            throw new BusinessRuleException("Shipped sales orders cannot change status");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_SHIPPED,
+                    "Shipped sales orders cannot change status");
         }
         if (newStatus == SalesOrderStatus.CONFIRMED) {
             ensureHasItems(order);
             ensureEnoughStock(order);
         }
         if (newStatus == SalesOrderStatus.PAID && order.getStatus() != SalesOrderStatus.CONFIRMED) {
-            throw new BusinessRuleException("Sales order must be CONFIRMED before it can be marked as PAID");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_NOT_CONFIRMED,
+                    "Sales order must be CONFIRMED before it can be marked as PAID");
         }
 
         order.setStatus(newStatus);
@@ -105,13 +114,19 @@ public class SalesOrderService {
         SalesOrder order = getSalesOrder(id);
 
         if (order.getStatus() == SalesOrderStatus.SHIPPED) {
-            throw new BusinessRuleException("Sales order has already been shipped");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_ALREADY_SHIPPED,
+                    "Sales order has already been shipped");
         }
         if (order.getStatus() == SalesOrderStatus.CANCELLED) {
-            throw new BusinessRuleException("Cancelled sales orders cannot be shipped");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_CANCELLED,
+                    "Cancelled sales orders cannot be shipped");
         }
         if (order.getStatus() != SalesOrderStatus.PAID) {
-            throw new BusinessRuleException("Only PAID sales orders can be shipped");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_NOT_PAID,
+                    "Only PAID sales orders can be shipped");
         }
 
         ensureHasItems(order);
@@ -148,7 +163,9 @@ public class SalesOrderService {
     public void delete(Long id) {
         SalesOrder order = getSalesOrder(id);
         if (order.getStatus() == SalesOrderStatus.SHIPPED) {
-            throw new BusinessRuleException("Shipped sales orders cannot be deleted");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_SHIPPED_DELETE_FORBIDDEN,
+                    "Shipped sales orders cannot be deleted");
         }
         salesOrderRepository.delete(order);
     }
@@ -160,13 +177,17 @@ public class SalesOrderService {
 
     private void ensureDraft(SalesOrder order) {
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
-            throw new BusinessRuleException("Sales order items can only be changed while status is DRAFT");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_NOT_DRAFT,
+                    "Sales order items can only be changed while status is DRAFT");
         }
     }
 
     private void ensureHasItems(SalesOrder order) {
         if (order.getItems().isEmpty()) {
-            throw new BusinessRuleException("Sales order must have at least one item before it can be confirmed");
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_ITEMS_REQUIRED,
+                    "Sales order must have at least one item before it can be confirmed");
         }
     }
 
@@ -174,7 +195,9 @@ public class SalesOrderService {
         for (SalesOrderItem item : order.getItems()) {
             Product product = item.getProduct();
             if (product.getQuantity() < item.getQuantity()) {
-                throw new BusinessRuleException("Not enough stock for product: " + product.getId());
+                throw new BusinessRuleException(
+                        ApiErrorCode.INSUFFICIENT_STOCK,
+                        "Not enough stock for product: " + product.getId());
             }
         }
     }

@@ -3,6 +3,7 @@ package com.stockflow.purchaseorder;
 import com.stockflow.audit.AuditAction;
 import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
+import com.stockflow.exception.ApiErrorCode;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.inventory.InventoryMovementService;
 import com.stockflow.inventory.MovementType;
@@ -85,13 +86,19 @@ public class PurchaseOrderService {
         PurchaseOrderStatus newStatus = request.status();
 
         if (newStatus == PurchaseOrderStatus.RECEIVED) {
-            throw new BusinessRuleException("Use the receive workflow to mark a purchase order as received");
+            throw new BusinessRuleException(
+                    ApiErrorCode.PURCHASE_ORDER_RECEIVE_WORKFLOW_REQUIRED,
+                    "Use the receive workflow to mark a purchase order as received");
         }
         if (order.getStatus() == PurchaseOrderStatus.CANCELLED) {
-            throw new BusinessRuleException("Cancelled purchase orders cannot change status");
+            throw new BusinessRuleException(
+                    ApiErrorCode.PURCHASE_ORDER_CANCELLED,
+                    "Cancelled purchase orders cannot change status");
         }
         if (newStatus == PurchaseOrderStatus.ORDERED && order.getItems().isEmpty()) {
-            throw new BusinessRuleException("Purchase order must have at least one item before it can be ordered");
+            throw new BusinessRuleException(
+                    ApiErrorCode.PURCHASE_ORDER_ITEMS_REQUIRED,
+                    "Purchase order must have at least one item before it can be ordered");
         }
 
         order.setStatus(newStatus);
@@ -103,13 +110,19 @@ public class PurchaseOrderService {
         PurchaseOrder order = getPurchaseOrder(id);
 
         if (order.getStatus() == PurchaseOrderStatus.RECEIVED) {
-            throw new BusinessRuleException("Purchase order has already been received");
+            throw new BusinessRuleException(
+                    ApiErrorCode.PURCHASE_ORDER_ALREADY_RECEIVED,
+                    "Purchase order has already been received");
         }
         if (order.getStatus() == PurchaseOrderStatus.CANCELLED) {
-            throw new BusinessRuleException("Cancelled purchase orders cannot be received");
+            throw new BusinessRuleException(
+                    ApiErrorCode.PURCHASE_ORDER_CANCELLED,
+                    "Cancelled purchase orders cannot be received");
         }
         if (order.getStatus() != PurchaseOrderStatus.ORDERED) {
-            throw new BusinessRuleException("Only ORDERED purchase orders can be received");
+            throw new BusinessRuleException(
+                    ApiErrorCode.PURCHASE_ORDER_NOT_ORDERED,
+                    "Only ORDERED purchase orders can be received");
         }
 
         for (PurchaseOrderItem item : order.getItems()) {
@@ -143,7 +156,9 @@ public class PurchaseOrderService {
     public void delete(Long id) {
         PurchaseOrder order = getPurchaseOrder(id);
         if (order.getStatus() == PurchaseOrderStatus.RECEIVED) {
-            throw new BusinessRuleException("Received purchase orders cannot be deleted");
+            throw new BusinessRuleException(
+                    ApiErrorCode.PURCHASE_ORDER_RECEIVED_DELETE_FORBIDDEN,
+                    "Received purchase orders cannot be deleted");
         }
         purchaseOrderRepository.delete(order);
     }
@@ -155,7 +170,9 @@ public class PurchaseOrderService {
 
     private void ensureDraft(PurchaseOrder order) {
         if (order.getStatus() != PurchaseOrderStatus.DRAFT) {
-            throw new BusinessRuleException("Purchase order items can only be changed while status is DRAFT");
+            throw new BusinessRuleException(
+                    ApiErrorCode.PURCHASE_ORDER_NOT_DRAFT,
+                    "Purchase order items can only be changed while status is DRAFT");
         }
     }
 }

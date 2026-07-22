@@ -33,6 +33,26 @@ I Swagger åpner du et endepunkt, trykker `Try it out`, fyller inn JSON og trykk
 
 Guiden antar at du starter med tom database. Hvis du allerede har testdata, kan `id`-ene være annerledes. Bruk da `id`-en du får tilbake i responsen fra API-et.
 
+## Feilresponser
+
+Alle feilresponser har et stabilt, maskinlesbart `code`-felt i tillegg til HTTP-status og melding:
+
+```json
+{
+  "timestamp": "2026-07-20T10:00:00Z",
+  "status": 422,
+  "error": "Unprocessable Entity",
+  "code": "PURCHASE_ORDER_ALREADY_RECEIVED",
+  "message": "Purchase order has already been received",
+  "path": "/api/purchase-orders/42/receive",
+  "validationErrors": {}
+}
+```
+
+Klienter bør bruke `code` for programlogikk og `message` for visning. Eksempler på workflow-koder er
+`PURCHASE_ORDER_NOT_ORDERED`, `SALES_ORDER_NOT_PAID`, `SALES_ORDER_ITEMS_REQUIRED` og
+`INSUFFICIENT_STOCK`.
+
 ## 1. Lag en leverandør
 
 Bruk:

@@ -17,23 +17,23 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
-        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        return build(HttpStatus.NOT_FOUND, ApiErrorCode.RESOURCE_NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiError> handleDuplicate(DuplicateResourceException ex, HttpServletRequest request) {
-        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return build(HttpStatus.CONFLICT, ApiErrorCode.DUPLICATE_RESOURCE, ex.getMessage(), request);
     }
 
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ApiError> handleBusinessRule(BusinessRuleException ex, HttpServletRequest request) {
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex,
                                                          HttpServletRequest request) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        return build(HttpStatus.UNAUTHORIZED, ApiErrorCode.INVALID_CREDENTIALS, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -46,6 +46,7 @@ public class GlobalExceptionHandler {
         ApiError body = ApiError.validation(
                 status.value(),
                 status.getReasonPhrase(),
+                ApiErrorCode.VALIDATION_FAILED,
                 "Validation failed",
                 request.getRequestURI(),
                 errors
@@ -64,6 +65,7 @@ public class GlobalExceptionHandler {
         ApiError body = ApiError.validation(
                 status.value(),
                 status.getReasonPhrase(),
+                ApiErrorCode.VALIDATION_FAILED,
                 "Validation failed",
                 request.getRequestURI(),
                 errors
@@ -77,14 +79,17 @@ public class GlobalExceptionHandler {
         ApiError body = ApiError.of(
                 status.value(),
                 status.getReasonPhrase(),
+                ApiErrorCode.INTERNAL_ERROR,
                 "Unexpected server error",
                 request.getRequestURI()
         );
         return ResponseEntity.status(status).body(body);
     }
 
-    private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest request) {
-        ApiError body = ApiError.of(status.value(), status.getReasonPhrase(), message, request.getRequestURI());
+    private ResponseEntity<ApiError> build(HttpStatus status, ApiErrorCode code, String message,
+                                           HttpServletRequest request) {
+        ApiError body = ApiError.of(
+                status.value(), status.getReasonPhrase(), code, message, request.getRequestURI());
         return ResponseEntity.status(status).body(body);
     }
 }

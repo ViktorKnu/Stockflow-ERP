@@ -106,6 +106,14 @@ class PurchaseOrderWorkflowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("RECEIVED"));
 
+        mockMvc.perform(post("/api/purchase-orders/{id}/receive", purchaseOrderId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("PURCHASE_ORDER_ALREADY_RECEIVED"))
+                .andExpect(jsonPath("$.message").value("Purchase order has already been received"))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/purchase-orders/%d/receive".formatted(purchaseOrderId)));
+
         assertThat(productRepository.findById(productId).orElseThrow().getQuantity()).isEqualTo(7);
 
         assertThat(inventoryMovementRepository.findByProductIdOrderByCreatedAtDesc(productId))

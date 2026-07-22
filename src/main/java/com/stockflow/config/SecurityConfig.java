@@ -1,9 +1,16 @@
 package com.stockflow.config;
 
+import com.stockflow.exception.ApiError;
+import com.stockflow.exception.ApiErrorCode;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -17,6 +24,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import tools.jackson.databind.ObjectMapper;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -31,7 +39,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   JwtAuthenticationConverter jwtAuthenticationConverter)
+                                                   JwtAuthenticationConverter jwtAuthenticationConverter,
+                                                   AuthenticationEntryPoint apiAuthenticationEntryPoint,
+                                                   AccessDeniedHandler apiAccessDeniedHandler)
             throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -58,13 +68,43 @@ public class SecurityConfig {
                         .anyRequest().denyAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        .authenticationEntryPoint(apiAuthenticationEntryPoint)
+                        .accessDeniedHandler(apiAccessDeniedHandler)
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(apiAuthenticationEntryPoint)
+                        .accessDeniedHandler(apiAccessDeniedHandler)
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable);
 
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationEntryPoint apiAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        return (request, response, exception) -> writeSecurityError(
+                objectMapper,
+                response,
+                HttpStatus.UNAUTHORIZED,
+                ApiErrorCode.AUTHENTICATION_REQUIRED,
+                "Authentication is required",
+                request.getRequestURI()
+        );
+    }
+
+    @Bean
+    public AccessDeniedHandler apiAccessDeniedHandler(ObjectMapper objectMapper) {
+        return (request, response, exception) -> writeSecurityError(
+                objectMapper,
+                response,
+                HttpStatus.FORBIDDEN,
+                ApiErrorCode.ACCESS_DENIED,
+                "Access is denied",
+                request.getRequestURI()
+        );
     }
 
     @Bean
@@ -113,5 +153,19 @@ public class SecurityConfig {
         JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
         authenticationConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
         return authenticationConverter;
+    }
+
+    private void writeSecurityError(ObjectMapper objectMapper,
+                                    HttpServletResponse response,
+                                    HttpStatus status,
+                                    ApiErrorCode code,
+                                    String message,
+                                    String path) throws java.io.IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(
+                response.getOutputStream(),
+                ApiError.of(status.value(), status.getReasonPhrase(), code, message, path)
+        );
     }
 }

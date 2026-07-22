@@ -3,6 +3,7 @@ package com.stockflow.inventory;
 import com.stockflow.audit.AuditAction;
 import com.stockflow.audit.AuditLogService;
 import com.stockflow.exception.BusinessRuleException;
+import com.stockflow.exception.ApiErrorCode;
 import com.stockflow.exception.ResourceNotFoundException;
 import com.stockflow.inventory.dto.InventoryMovementCreateRequest;
 import com.stockflow.inventory.dto.InventoryMovementResponse;
@@ -83,7 +84,9 @@ public class InventoryMovementService {
 
     private Integer calculateNewQuantity(Integer previousQuantity, MovementType type, Integer quantity) {
         if (type != MovementType.ADJUSTMENT && quantity <= 0) {
-            throw new BusinessRuleException("IN and OUT movements must have quantity greater than zero");
+            throw new BusinessRuleException(
+                    ApiErrorCode.INVENTORY_POSITIVE_QUANTITY_REQUIRED,
+                    "IN and OUT movements must have quantity greater than zero");
         }
 
         return switch (type) {
@@ -91,7 +94,9 @@ public class InventoryMovementService {
             case OUT -> {
                 int updatedQuantity = previousQuantity - quantity;
                 if (updatedQuantity < 0) {
-                    throw new BusinessRuleException("Inventory movement cannot make stock negative");
+                    throw new BusinessRuleException(
+                            ApiErrorCode.INSUFFICIENT_STOCK,
+                            "Inventory movement cannot make stock negative");
                 }
                 yield updatedQuantity;
             }
