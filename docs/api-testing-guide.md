@@ -45,6 +45,7 @@ Alle feilresponser har et stabilt, maskinlesbart `code`-felt i tillegg til HTTP-
   "code": "PURCHASE_ORDER_ALREADY_RECEIVED",
   "message": "Purchase order has already been received",
   "path": "/api/purchase-orders/42/receive",
+  "correlationId": "client-request-42",
   "validationErrors": {}
 }
 ```
@@ -52,6 +53,18 @@ Alle feilresponser har et stabilt, maskinlesbart `code`-felt i tillegg til HTTP-
 Klienter bør bruke `code` for programlogikk og `message` for visning. Eksempler på workflow-koder er
 `PURCHASE_ORDER_NOT_ORDERED`, `SALES_ORDER_NOT_PAID`, `SALES_ORDER_ITEMS_REQUIRED` og
 `INSUFFICIENT_STOCK`.
+
+## Correlation ID
+
+Alle responser inneholder headeren `X-Correlation-ID`. Du kan sende en egen ID i samme header:
+
+```http
+X-Correlation-ID: client-request-42
+```
+
+Gyldige klient-ID-er kan inneholde bokstaver, tall, punktum, understrek, kolon og bindestrek,
+og kan være opptil 128 tegn. Manglende eller ugyldige verdier erstattes med en UUID. ID-en
+ligger også i feilresponsens `correlationId`-felt og i applikasjonsloggen.
 
 ## 1. Lag en leverandør
 

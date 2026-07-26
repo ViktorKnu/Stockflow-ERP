@@ -28,6 +28,7 @@ Dette er planen videre. Målet er små commits som kan testes én og én.
 - Valgfri demo-data gjennom Spring-profilen `demo`
 - Postman-samling med automatisert ERP-flyt
 - Maskinlesbare feilkoder for validering og ERP-workflows
+- Correlation ID i responser, feilsvar og logger
 
 ## Neste commits
 
@@ -35,5 +36,4 @@ Ingen planlagte commits akkurat nå.
 
 ## Senere forbedringer
 
-- Request correlation ID
 - Mer komplett ledger for salg, refusjoner og justeringer

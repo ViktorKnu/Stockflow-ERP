@@ -10,14 +10,18 @@ public record ApiError(
         ApiErrorCode code,
         String message,
         String path,
+        String correlationId,
         Map<String, String> validationErrors
 ) {
-    public static ApiError of(int status, String error, ApiErrorCode code, String message, String path) {
-        return new ApiError(Instant.now(), status, error, code, message, path, Map.of());
+    public static ApiError of(int status, String error, ApiErrorCode code, String message, String path,
+                              String correlationId) {
+        return new ApiError(Instant.now(), status, error, code, message, path, correlationId, Map.of());
     }
 
     public static ApiError validation(int status, String error, ApiErrorCode code, String message, String path,
+                                      String correlationId,
                                       Map<String, String> validationErrors) {
-        return new ApiError(Instant.now(), status, error, code, message, path, validationErrors);
+        return new ApiError(
+                Instant.now(), status, error, code, message, path, correlationId, validationErrors);
     }
 }

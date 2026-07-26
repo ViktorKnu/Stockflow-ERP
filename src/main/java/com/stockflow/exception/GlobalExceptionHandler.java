@@ -1,5 +1,6 @@
 package com.stockflow.exception;
 
+import com.stockflow.config.CorrelationIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -49,6 +50,7 @@ public class GlobalExceptionHandler {
                 ApiErrorCode.VALIDATION_FAILED,
                 "Validation failed",
                 request.getRequestURI(),
+                CorrelationIdFilter.getCorrelationId(request),
                 errors
         );
         return ResponseEntity.status(status).body(body);
@@ -68,6 +70,7 @@ public class GlobalExceptionHandler {
                 ApiErrorCode.VALIDATION_FAILED,
                 "Validation failed",
                 request.getRequestURI(),
+                CorrelationIdFilter.getCorrelationId(request),
                 errors
         );
         return ResponseEntity.status(status).body(body);
@@ -81,7 +84,8 @@ public class GlobalExceptionHandler {
                 status.getReasonPhrase(),
                 ApiErrorCode.INTERNAL_ERROR,
                 "Unexpected server error",
-                request.getRequestURI()
+                request.getRequestURI(),
+                CorrelationIdFilter.getCorrelationId(request)
         );
         return ResponseEntity.status(status).body(body);
     }
@@ -89,7 +93,12 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ApiError> build(HttpStatus status, ApiErrorCode code, String message,
                                            HttpServletRequest request) {
         ApiError body = ApiError.of(
-                status.value(), status.getReasonPhrase(), code, message, request.getRequestURI());
+                status.value(),
+                status.getReasonPhrase(),
+                code,
+                message,
+                request.getRequestURI(),
+                CorrelationIdFilter.getCorrelationId(request));
         return ResponseEntity.status(status).body(body);
     }
 }

@@ -2,6 +2,7 @@ package com.stockflow.config;
 
 import com.stockflow.exception.ApiError;
 import com.stockflow.exception.ApiErrorCode;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -91,7 +92,7 @@ public class SecurityConfig {
                 HttpStatus.UNAUTHORIZED,
                 ApiErrorCode.AUTHENTICATION_REQUIRED,
                 "Authentication is required",
-                request.getRequestURI()
+                request
         );
     }
 
@@ -103,7 +104,7 @@ public class SecurityConfig {
                 HttpStatus.FORBIDDEN,
                 ApiErrorCode.ACCESS_DENIED,
                 "Access is denied",
-                request.getRequestURI()
+                request
         );
     }
 
@@ -160,12 +161,19 @@ public class SecurityConfig {
                                     HttpStatus status,
                                     ApiErrorCode code,
                                     String message,
-                                    String path) throws java.io.IOException {
+                                    HttpServletRequest request) throws java.io.IOException {
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(
                 response.getOutputStream(),
-                ApiError.of(status.value(), status.getReasonPhrase(), code, message, path)
+                ApiError.of(
+                        status.value(),
+                        status.getReasonPhrase(),
+                        code,
+                        message,
+                        request.getRequestURI(),
+                        CorrelationIdFilter.getCorrelationId(request)
+                )
         );
     }
 }

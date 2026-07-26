@@ -21,6 +21,10 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+logging:
+  pattern:
+    correlation: "[correlationId=%X{correlationId:-none}] "
+
 management:
   endpoints:
     web:

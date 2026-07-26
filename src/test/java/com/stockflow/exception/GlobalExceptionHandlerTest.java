@@ -1,5 +1,6 @@
 package com.stockflow.exception;
 
+import com.stockflow.config.CorrelationIdFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ class GlobalExceptionHandlerTest {
     @Test
     void businessRuleResponsePreservesMachineReadableCode() {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/purchase-orders/42/receive");
+        request.setAttribute(CorrelationIdFilter.ATTRIBUTE_NAME, "handler-test-123");
         BusinessRuleException exception = new BusinessRuleException(
                 ApiErrorCode.PURCHASE_ORDER_ALREADY_RECEIVED,
                 "Purchase order has already been received");
@@ -25,11 +27,13 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().code()).isEqualTo(ApiErrorCode.PURCHASE_ORDER_ALREADY_RECEIVED);
         assertThat(response.getBody().message()).isEqualTo("Purchase order has already been received");
         assertThat(response.getBody().path()).isEqualTo("/api/purchase-orders/42/receive");
+        assertThat(response.getBody().correlationId()).isEqualTo("handler-test-123");
     }
 
     @Test
     void notFoundResponseUsesStableGenericCode() {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/products/999");
+        request.setAttribute(CorrelationIdFilter.ATTRIBUTE_NAME, "handler-test-404");
 
         ResponseEntity<ApiError> response = handler.handleNotFound(
                 new ResourceNotFoundException("Product not found: 999"), request);

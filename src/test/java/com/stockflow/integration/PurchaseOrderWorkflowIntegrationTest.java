@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -107,10 +108,13 @@ class PurchaseOrderWorkflowIntegrationTest {
                 .andExpect(jsonPath("$.status").value("RECEIVED"));
 
         mockMvc.perform(post("/api/purchase-orders/{id}/receive", purchaseOrderId)
-                        .header("Authorization", bearer(token)))
+                        .header("Authorization", bearer(token))
+                        .header("X-Correlation-ID", "integration-receive-again"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("PURCHASE_ORDER_ALREADY_RECEIVED"))
                 .andExpect(jsonPath("$.message").value("Purchase order has already been received"))
+                .andExpect(jsonPath("$.correlationId").value("integration-receive-again"))
+                .andExpect(header().string("X-Correlation-ID", "integration-receive-again"))
                 .andExpect(jsonPath("$.path")
                         .value("/api/purchase-orders/%d/receive".formatted(purchaseOrderId)));
 
