@@ -2,6 +2,8 @@ package com.stockflow.ledger;
 
 import com.stockflow.audit.AuditAction;
 import com.stockflow.audit.AuditLogService;
+import com.stockflow.exception.BusinessRuleException;
+import com.stockflow.ledger.dto.LedgerAdjustmentCreateRequest;
 import com.stockflow.ledger.dto.LedgerSummaryResponse;
 import com.stockflow.ledger.dto.LedgerTransactionResponse;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -92,19 +95,71 @@ class LedgerServiceTest {
     }
 
     @Test
+    void canRecordRefundTransaction() {
+        when(ledgerTransactionRepository.save(any(LedgerTransaction.class))).thenAnswer(invocation -> {
+            LedgerTransaction transaction = invocation.getArgument(0);
+            transaction.setId(3L);
+            transaction.setCreatedAt(LocalDateTime.of(2026, 6, 11, 12, 0));
+            return transaction;
+        });
+
+        LedgerTransactionResponse response = ledgerService.recordRefund(
+                new BigDecimal("499.80"),
+                "Sales order refunded: 20",
+                LedgerSourceType.SALES_ORDER,
+                20L
+        );
+
+        assertThat(response.type()).isEqualTo(LedgerTransactionType.REFUND);
+        assertThat(response.amount()).isEqualByComparingTo("499.80");
+        assertThat(response.sourceType()).isEqualTo(LedgerSourceType.SALES_ORDER);
+        assertThat(response.sourceId()).isEqualTo(20L);
+    }
+
+    @Test
+    void canRecordSignedManualAdjustment() {
+        when(ledgerTransactionRepository.save(any(LedgerTransaction.class))).thenAnswer(invocation -> {
+            LedgerTransaction transaction = invocation.getArgument(0);
+            transaction.setId(4L);
+            transaction.setCreatedAt(LocalDateTime.of(2026, 6, 11, 12, 0));
+            return transaction;
+        });
+
+        LedgerTransactionResponse response = ledgerService.recordAdjustment(
+                new LedgerAdjustmentCreateRequest(new BigDecimal("-75.50"), "Bank fee correction"));
+
+        assertThat(response.type()).isEqualTo(LedgerTransactionType.ADJUSTMENT);
+        assertThat(response.amount()).isEqualByComparingTo("-75.50");
+        assertThat(response.sourceType()).isEqualTo(LedgerSourceType.MANUAL);
+        assertThat(response.sourceId()).isZero();
+    }
+
+    @Test
+    void rejectsZeroAdjustment() {
+        assertThatThrownBy(() -> ledgerService.recordAdjustment(
+                new LedgerAdjustmentCreateRequest(BigDecimal.ZERO, "No change")))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("cannot be zero");
+    }
+
+    @Test
     void calculatesRevenueExpensesAndNetProfit() {
         when(ledgerTransactionRepository.findAll()).thenReturn(List.of(
                 transaction(LedgerTransactionType.REVENUE, "1200.00"),
                 transaction(LedgerTransactionType.REVENUE, "300.00"),
-                transaction(LedgerTransactionType.EXPENSE, "500.00")
+                transaction(LedgerTransactionType.EXPENSE, "500.00"),
+                transaction(LedgerTransactionType.REFUND, "200.00"),
+                transaction(LedgerTransactionType.ADJUSTMENT, "-50.00")
         ));
 
         LedgerSummaryResponse response = ledgerService.summary();
 
         assertThat(response.totalRevenue()).isEqualByComparingTo("1500.00");
         assertThat(response.totalExpenses()).isEqualByComparingTo("500.00");
-        assertThat(response.netProfit()).isEqualByComparingTo("1000.00");
-        assertThat(response.transactionCount()).isEqualTo(3);
+        assertThat(response.totalRefunds()).isEqualByComparingTo("200.00");
+        assertThat(response.totalAdjustments()).isEqualByComparingTo("-50.00");
+        assertThat(response.netProfit()).isEqualByComparingTo("750.00");
+        assertThat(response.transactionCount()).isEqualTo(5);
     }
 
     @Test

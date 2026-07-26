@@ -66,6 +66,12 @@ public class SalesOrderController {
         return salesOrderService.ship(id);
     }
 
+    @PostMapping("/{id}/refund")
+    @Operation(summary = "Refund a shipped sales order and return its items to stock")
+    public SalesOrderResponse refund(@PathVariable Long id) {
+        return salesOrderService.refund(id);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete sales order")

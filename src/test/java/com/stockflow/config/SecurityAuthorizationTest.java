@@ -103,6 +103,24 @@ class SecurityAuthorizationTest {
     }
 
     @Test
+    @WithMockUser(roles = "EMPLOYEE")
+    void employeeCannotRecordLedgerAdjustments() throws Exception {
+        mockMvc.perform(post("/api/ledger/adjustments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":-10.00,\"description\":\"Correction\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void managerCanRecordLedgerAdjustments() throws Exception {
+        mockMvc.perform(post("/api/ledger/adjustments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":-10.00,\"description\":\"Correction\"}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     @WithMockUser(roles = "MANAGER")
     void managerCannotAdministerUsers() throws Exception {
         mockMvc.perform(get("/api/users"))

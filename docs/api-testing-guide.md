@@ -270,7 +270,33 @@ GET /api/ledger/summary
 GET /api/audit-logs
 ```
 
-## 6. Se månedsrapporten
+## 6. Refunder salgsordren
+
+Når ordren har status `SHIPPED`, bruk:
+
+```text
+POST /api/sales-orders/1/refund
+```
+
+Ordren skal få status `REFUNDED`, lageret skal øke med de returnerte varene, ledger skal få
+en `REFUND`, og audit log skal få `SALES_ORDER_REFUNDED`.
+
+Du kan også registrere en signert manuell ledger-justering:
+
+```text
+POST /api/ledger/adjustments
+```
+
+```json
+{
+  "amount": -75.50,
+  "description": "Bank fee correction"
+}
+```
+
+Positive beløp øker resultatet og negative beløp reduserer det. Null er ikke tillatt.
+
+## 7. Se månedsrapporten
 
 Finn `GET /api/ledger/summary/monthly` under `ledger-controller` i Swagger.
 
@@ -283,7 +309,8 @@ Det samme kallet kan åpnes direkte i nettleseren:
 http://localhost:8080/api/ledger/summary/monthly?year=2026
 ```
 
-Hver måned viser summen av `REVENUE`, summen av `EXPENSE`, resultatet og antall transaksjoner.
+Hver måned viser `REVENUE`, `EXPENSE`, `REFUND`, signerte `ADJUSTMENT`, nettoresultat og antall
+transaksjoner.
 Måneder uten transaksjoner vises ikke.
 
 ## 7. Opprett en bruker

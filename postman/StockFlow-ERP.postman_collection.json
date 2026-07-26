@@ -446,6 +446,27 @@
           ]
         },
         {
+          "name": "Refund sales order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sales-orders/{{salesOrderId}}/refund"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sales order was refunded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('REFUNDED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Get sales order",
           "request": {
             "method": "GET",
@@ -457,6 +478,34 @@
     {
       "name": "05 - Finance and audit",
       "item": [
+        {
+          "name": "Record negative ledger adjustment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": -75.50,\n  \"description\": \"Postman bank fee adjustment\"\n}"
+            },
+            "url": "{{baseUrl}}/api/ledger/adjustments"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Signed adjustment was recorded', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().type).to.eql('ADJUSTMENT');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "List ledger transactions",
           "request": {

@@ -2,7 +2,10 @@ package com.stockflow.ledger;
 
 import com.stockflow.audit.AuditAction;
 import com.stockflow.audit.AuditLogService;
+import com.stockflow.exception.ApiErrorCode;
+import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ResourceNotFoundException;
+import com.stockflow.ledger.dto.LedgerAdjustmentCreateRequest;
 import com.stockflow.ledger.dto.LedgerSummaryResponse;
 import com.stockflow.ledger.dto.LedgerTransactionResponse;
 import com.stockflow.ledger.dto.MonthlyLedgerSummaryResponse;
@@ -66,6 +69,8 @@ public class LedgerService {
                             entry.getKey().toString(),
                             summary.totalRevenue(),
                             summary.totalExpenses(),
+                            summary.totalRefunds(),
+                            summary.totalAdjustments(),
                             summary.netProfit(),
                             summary.transactionCount()
                     );
@@ -97,6 +102,31 @@ public class LedgerService {
         return recordTransaction(LedgerTransactionType.REVENUE, amount, description, sourceType, sourceId);
     }
 
+    @Transactional
+    public LedgerTransactionResponse recordRefund(BigDecimal amount,
+                                                  String description,
+                                                  LedgerSourceType sourceType,
+                                                  Long sourceId) {
+        return recordTransaction(LedgerTransactionType.REFUND, amount, description, sourceType, sourceId);
+    }
+
+    @Transactional
+    public LedgerTransactionResponse recordAdjustment(LedgerAdjustmentCreateRequest request) {
+        if (request.amount().signum() == 0) {
+            throw new BusinessRuleException(
+                    ApiErrorCode.LEDGER_ADJUSTMENT_ZERO,
+                    "Ledger adjustment amount cannot be zero");
+        }
+
+        return recordTransaction(
+                LedgerTransactionType.ADJUSTMENT,
+                request.amount(),
+                request.description(),
+                LedgerSourceType.MANUAL,
+                0L
+        );
+    }
+
     private LedgerTransactionResponse recordTransaction(LedgerTransactionType type,
                                                         BigDecimal amount,
                                                         String description,
@@ -125,10 +155,17 @@ public class LedgerService {
     private LedgerSummaryResponse summarize(List<LedgerTransaction> transactions) {
         BigDecimal totalRevenue = sumByType(transactions, LedgerTransactionType.REVENUE);
         BigDecimal totalExpenses = sumByType(transactions, LedgerTransactionType.EXPENSE);
+        BigDecimal totalRefunds = sumByType(transactions, LedgerTransactionType.REFUND);
+        BigDecimal totalAdjustments = sumByType(transactions, LedgerTransactionType.ADJUSTMENT);
         return new LedgerSummaryResponse(
                 totalRevenue,
                 totalExpenses,
-                totalRevenue.subtract(totalExpenses),
+                totalRefunds,
+                totalAdjustments,
+                totalRevenue
+                        .subtract(totalExpenses)
+                        .subtract(totalRefunds)
+                        .add(totalAdjustments),
                 transactions.size()
         );
     }

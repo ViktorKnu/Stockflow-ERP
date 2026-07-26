@@ -5,5 +5,6 @@ public enum SalesOrderStatus {
     CONFIRMED,
     PAID,
     SHIPPED,
+    REFUNDED,
     CANCELLED
 }

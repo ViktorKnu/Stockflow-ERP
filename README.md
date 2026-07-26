@@ -85,6 +85,12 @@ Salg:
 Produkt på lager -> Salgsordre -> Betalt -> Sendt -> Lager går ned -> Ledger REVENUE -> Audit log
 ```
 
+Refusjon:
+
+```text
+Sendt salgsordre -> Refundert -> Lager går opp -> Ledger REFUND -> Audit log
+```
+
 Når lageret endres, lagres det alltid som en lagerbevegelse. Det gjør at man kan se hva beholdningen var før og etter en operasjon.
 
 Når en viktig handling skjer, for eksempel at en innkjøpsordre mottas eller en salgsordre sendes, opprettes en audit log. Den er der for å forklare hva systemet gjorde og når.
@@ -268,6 +274,7 @@ POST   /api/sales-orders
 POST   /api/sales-orders/{id}/items
 PUT    /api/sales-orders/{id}/status
 POST   /api/sales-orders/{id}/ship
+POST   /api/sales-orders/{id}/refund
 DELETE /api/sales-orders/{id}
 ```
 
@@ -276,6 +283,7 @@ Ledger:
 ```text
 GET /api/ledger/transactions
 GET /api/ledger/transactions/{id}
+POST /api/ledger/adjustments
 GET /api/ledger/summary
 GET /api/ledger/summary/monthly
 GET /api/ledger/summary/monthly?year=2026

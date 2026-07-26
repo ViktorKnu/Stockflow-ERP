@@ -85,6 +85,11 @@ public class SalesOrderService {
                     ApiErrorCode.SALES_ORDER_SHIP_WORKFLOW_REQUIRED,
                     "Use the ship workflow to mark a sales order as shipped");
         }
+        if (newStatus == SalesOrderStatus.REFUNDED) {
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_REFUND_WORKFLOW_REQUIRED,
+                    "Use the refund workflow to mark a sales order as refunded");
+        }
         if (order.getStatus() == SalesOrderStatus.CANCELLED) {
             throw new BusinessRuleException(
                     ApiErrorCode.SALES_ORDER_CANCELLED,
@@ -94,6 +99,11 @@ public class SalesOrderService {
             throw new BusinessRuleException(
                     ApiErrorCode.SALES_ORDER_SHIPPED,
                     "Shipped sales orders cannot change status");
+        }
+        if (order.getStatus() == SalesOrderStatus.REFUNDED) {
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_REFUNDED,
+                    "Refunded sales orders cannot change status");
         }
         if (newStatus == SalesOrderStatus.CONFIRMED) {
             ensureHasItems(order);
@@ -106,6 +116,48 @@ public class SalesOrderService {
         }
 
         order.setStatus(newStatus);
+        return SalesOrderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public SalesOrderResponse refund(Long id) {
+        SalesOrder order = getSalesOrder(id);
+
+        if (order.getStatus() == SalesOrderStatus.REFUNDED) {
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_ALREADY_REFUNDED,
+                    "Sales order has already been refunded");
+        }
+        if (order.getStatus() != SalesOrderStatus.SHIPPED) {
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_NOT_SHIPPED_FOR_REFUND,
+                    "Only SHIPPED sales orders can be refunded");
+        }
+
+        for (SalesOrderItem item : order.getItems()) {
+            inventoryMovementService.recordMovement(
+                    item.getProduct(),
+                    MovementType.IN,
+                    item.getQuantity(),
+                    "Sales order refunded: " + order.getId()
+            );
+        }
+
+        ledgerService.recordRefund(
+                order.getTotalAmount(),
+                "Sales order refunded: " + order.getId(),
+                LedgerSourceType.SALES_ORDER,
+                order.getId()
+        );
+
+        order.setStatus(SalesOrderStatus.REFUNDED);
+        auditLogService.record(
+                AuditAction.SALES_ORDER_REFUNDED,
+                "SalesOrder",
+                order.getId(),
+                "Sales order refunded and returned to inventory"
+        );
+
         return SalesOrderMapper.toResponse(order);
     }
 
@@ -166,6 +218,11 @@ public class SalesOrderService {
             throw new BusinessRuleException(
                     ApiErrorCode.SALES_ORDER_SHIPPED_DELETE_FORBIDDEN,
                     "Shipped sales orders cannot be deleted");
+        }
+        if (order.getStatus() == SalesOrderStatus.REFUNDED) {
+            throw new BusinessRuleException(
+                    ApiErrorCode.SALES_ORDER_REFUNDED_DELETE_FORBIDDEN,
+                    "Refunded sales orders cannot be deleted");
         }
         salesOrderRepository.delete(order);
     }

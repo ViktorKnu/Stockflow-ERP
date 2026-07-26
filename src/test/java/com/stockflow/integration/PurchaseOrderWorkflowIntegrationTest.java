@@ -151,6 +151,68 @@ class PurchaseOrderWorkflowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].amount").value(62.5))
                 .andExpect(jsonPath("$[0].sourceId").value(purchaseOrderId));
+
+        long salesOrderId = createSalesOrder(token);
+
+        mockMvc.perform(post("/api/sales-orders/{id}/items", salesOrderId)
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "productId": %d,
+                                  "quantity": 2,
+                                  "unitPrice": 25.00
+                                }
+                                """.formatted(productId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAmount").value(50.0));
+
+        updateSalesOrderStatus(token, salesOrderId, "CONFIRMED");
+        updateSalesOrderStatus(token, salesOrderId, "PAID");
+
+        mockMvc.perform(post("/api/sales-orders/{id}/ship", salesOrderId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SHIPPED"));
+
+        assertThat(productRepository.findById(productId).orElseThrow().getQuantity()).isEqualTo(5);
+
+        mockMvc.perform(post("/api/sales-orders/{id}/refund", salesOrderId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REFUNDED"));
+
+        assertThat(productRepository.findById(productId).orElseThrow().getQuantity()).isEqualTo(7);
+
+        mockMvc.perform(post("/api/ledger/adjustments")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "amount": -10.00,
+                                  "description": "Integration correction"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.type").value("ADJUSTMENT"))
+                .andExpect(jsonPath("$.amount").value(-10.0));
+
+        mockMvc.perform(get("/api/ledger/summary")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalRevenue").value(50.0))
+                .andExpect(jsonPath("$.totalExpenses").value(62.5))
+                .andExpect(jsonPath("$.totalRefunds").value(50.0))
+                .andExpect(jsonPath("$.totalAdjustments").value(-10.0))
+                .andExpect(jsonPath("$.netProfit").value(-72.5))
+                .andExpect(jsonPath("$.transactionCount").value(4));
+
+        assertThat(auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(
+                "SalesOrder", salesOrderId))
+                .anySatisfy(auditLog -> {
+                    assertThat(auditLog.getAction()).isEqualTo(AuditAction.SALES_ORDER_REFUNDED);
+                    assertThat(auditLog.getActor()).isEqualTo(ADMIN_EMAIL);
+                });
     }
 
     private String loginAsBootstrapAdmin() throws Exception {
@@ -228,6 +290,35 @@ class PurchaseOrderWorkflowIntegrationTest {
                 .getContentAsString();
 
         return ((Number) JsonPath.read(response, "$.id")).longValue();
+    }
+
+    private long createSalesOrder(String token) throws Exception {
+        String response = mockMvc.perform(post("/api/sales-orders")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "customerName": "Integration Customer",
+                                  "customerEmail": "customer@integration.test"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return ((Number) JsonPath.read(response, "$.id")).longValue();
+    }
+
+    private void updateSalesOrderStatus(String token, long salesOrderId, String statusValue)
+            throws Exception {
+        mockMvc.perform(put("/api/sales-orders/{id}/status", salesOrderId)
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"%s\"}".formatted(statusValue)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(statusValue));
     }
 
     private String bearer(String token) {

@@ -49,6 +49,16 @@ Når salgsordren sendes, gjør systemet dette:
 
 Det er ikke lov å sende samme ordre to ganger.
 
+En sendt ordre kan refunderes én gang med `POST /api/sales-orders/{id}/refund`. Da skjer alt i
+samme databasetransaksjon:
+
+- Varene føres tilbake med `InventoryMovement` type `IN`
+- Ledger får en `REFUND` på hele ordrebeløpet
+- Ordren settes til `REFUNDED`
+- Audit log får `SALES_ORDER_REFUNDED`
+
+Det er ikke mulig å refundere en ordre som ikke er sendt, eller refundere samme ordre to ganger.
+
 ## Lagerbevegelser
 
 En lagerbevegelse er historikken bak lagerbeholdningen.
@@ -74,8 +84,11 @@ Systemet lager:
 
 - `EXPENSE` når en innkjøpsordre mottas
 - `REVENUE` når en salgsordre sendes
+- `REFUND` når en sendt salgsordre refunderes
+- `ADJUSTMENT` for manuelle, signerte korrigeringer
 
-`GET /api/ledger/summary` summerer inntekter, kostnader og resultat.
+Positive justeringer øker resultatet, mens negative justeringer reduserer det.
+`GET /api/ledger/summary` viser inntekter, kostnader, refusjoner, justeringer og nettoresultat.
 
 `GET /api/ledger/summary/monthly` deler de samme tallene opp per måned. Legg til for eksempel
 `?year=2026` for å begrense rapporten til ett år.
@@ -90,6 +103,7 @@ Eksempler:
 - `INVENTORY_MOVEMENT_CREATED`
 - `PURCHASE_ORDER_RECEIVED`
 - `SALES_ORDER_SHIPPED`
+- `SALES_ORDER_REFUNDED`
 - `LEDGER_TRANSACTION_CREATED`
 
 Audit log er read-only fra API-et. Den opprettes av systemet når noe viktig skjer.

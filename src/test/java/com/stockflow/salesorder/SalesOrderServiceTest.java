@@ -288,6 +288,74 @@ class SalesOrderServiceTest {
         verify(auditLogService, never()).record(any(), any(), any(), any());
     }
 
+    @Test
+    void refundingShippedSalesOrderReturnsStockAndRecordsRefund() {
+        Product product = product(7);
+        SalesOrder order = salesOrderWithItem(product, 3);
+        order.setStatus(SalesOrderStatus.SHIPPED);
+        when(salesOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+        when(inventoryMovementService.recordMovement(
+                same(product),
+                eq(MovementType.IN),
+                eq(3),
+                eq("Sales order refunded: 10")
+        )).thenAnswer(invocation -> {
+            product.setQuantity(product.getQuantity() + 3);
+            return null;
+        });
+
+        SalesOrderResponse response = salesOrderService.refund(10L);
+
+        assertThat(response.status()).isEqualTo(SalesOrderStatus.REFUNDED);
+        assertThat(product.getQuantity()).isEqualTo(10);
+        verify(inventoryMovementService).recordMovement(
+                same(product),
+                eq(MovementType.IN),
+                eq(3),
+                eq("Sales order refunded: 10")
+        );
+        verify(ledgerService).recordRefund(
+                eq(new BigDecimal("450.00")),
+                eq("Sales order refunded: 10"),
+                eq(LedgerSourceType.SALES_ORDER),
+                eq(10L)
+        );
+        verify(auditLogService).record(
+                AuditAction.SALES_ORDER_REFUNDED,
+                "SalesOrder",
+                10L,
+                "Sales order refunded and returned to inventory"
+        );
+    }
+
+    @Test
+    void cannotRefundSalesOrderTwice() {
+        SalesOrder order = salesOrderWithItem(product(10), 3);
+        order.setStatus(SalesOrderStatus.REFUNDED);
+        when(salesOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> salesOrderService.refund(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("already been refunded");
+
+        verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(ledgerService, never()).recordRefund(any(), any(), any(), any());
+    }
+
+    @Test
+    void cannotRefundOrderThatHasNotBeenShipped() {
+        SalesOrder order = salesOrderWithItem(product(10), 3);
+        order.setStatus(SalesOrderStatus.PAID);
+        when(salesOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> salesOrderService.refund(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("SHIPPED");
+
+        verify(inventoryMovementService, never()).recordMovement(any(), any(), any(), any());
+        verify(ledgerService, never()).recordRefund(any(), any(), any(), any());
+    }
+
     private SalesOrder salesOrder() {
         return SalesOrder.builder()
                 .id(10L)

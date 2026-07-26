@@ -29,6 +29,7 @@ Dette er planen videre. Målet er små commits som kan testes én og én.
 - Postman-samling med automatisert ERP-flyt
 - Maskinlesbare feilkoder for validering og ERP-workflows
 - Correlation ID i responser, feilsvar og logger
+- Refusjonsflyt, lagerretur og signerte ledger-justeringer
 
 ## Neste commits
 
@@ -36,4 +37,4 @@ Ingen planlagte commits akkurat nå.
 
 ## Senere forbedringer
 
-- Mer komplett ledger for salg, refusjoner og justeringer
+Ingen planlagte forbedringer akkurat nå.
