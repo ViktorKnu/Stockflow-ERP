@@ -54,6 +54,10 @@ Klienter bør bruke `code` for programlogikk og `message` for visning. Eksempler
 `PURCHASE_ORDER_NOT_ORDERED`, `SALES_ORDER_NOT_PAID`, `SALES_ORDER_ITEMS_REQUIRED` og
 `INSUFFICIENT_STOCK`.
 
+Hvis to forespørsler endrer samme produkt eller ordre samtidig, svarer API-et med HTTP
+`409 Conflict` og `code: "CONCURRENT_MODIFICATION"`. Ingen del av den tapende transaksjonen
+blir lagret. Last ressursen på nytt og prøv handlingen igjen.
+
 ## Correlation ID
 
 Alle responser inneholder headeren `X-Correlation-ID`. Du kan sende en egen ID i samme header:

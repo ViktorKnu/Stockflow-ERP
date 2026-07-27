@@ -30,6 +30,7 @@ Dette er planen videre. Målet er små commits som kan testes én og én.
 - Maskinlesbare feilkoder for validering og ERP-workflows
 - Correlation ID i responser, feilsvar og logger
 - Refusjonsflyt, lagerretur og signerte ledger-justeringer
+- Optimistisk låsing av ordre og stabil konfliktrespons ved samtidige endringer
 
 ## Neste commits
 

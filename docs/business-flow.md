@@ -28,6 +28,11 @@ Når en innkjøpsordre mottas, gjør systemet flere ting i samme transaksjon:
 
 Hvis noe av dette feiler, skal ikke systemet stå igjen med halvferdige data.
 
+Innkjøps- og salgsordrer har optimistisk versjonslåsing. Hvis to forespørsler forsøker å
+endre samme ordre samtidig, får den tapende forespørselen HTTP `409 Conflict` med feilkoden
+`CONCURRENT_MODIFICATION`. Hele den tapende transaksjonen rulles tilbake, inkludert lager-,
+ledger- og audit-endringer. Klienten må laste ressursen på nytt før den prøver igjen.
+
 ## Salg
 
 Når bedriften selger varer, starter det med en salgsordre.

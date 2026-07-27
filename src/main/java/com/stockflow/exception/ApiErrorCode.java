@@ -3,6 +3,7 @@ package com.stockflow.exception;
 public enum ApiErrorCode {
     RESOURCE_NOT_FOUND,
     DUPLICATE_RESOURCE,
+    CONCURRENT_MODIFICATION,
     INVALID_CREDENTIALS,
     AUTHENTICATION_REQUIRED,
     ACCESS_DENIED,

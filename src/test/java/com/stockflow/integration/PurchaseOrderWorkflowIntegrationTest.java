@@ -9,6 +9,8 @@ import com.stockflow.ledger.LedgerSourceType;
 import com.stockflow.ledger.LedgerTransactionRepository;
 import com.stockflow.ledger.LedgerTransactionType;
 import com.stockflow.product.ProductRepository;
+import com.stockflow.purchaseorder.PurchaseOrderRepository;
+import com.stockflow.salesorder.SalesOrderRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -62,6 +64,12 @@ class PurchaseOrderWorkflowIntegrationTest {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private PurchaseOrderRepository purchaseOrderRepository;
+
+    @Autowired
+    private SalesOrderRepository salesOrderRepository;
 
     @Autowired
     private InventoryMovementRepository inventoryMovementRepository;
@@ -119,6 +127,8 @@ class PurchaseOrderWorkflowIntegrationTest {
                         .value("/api/purchase-orders/%d/receive".formatted(purchaseOrderId)));
 
         assertThat(productRepository.findById(productId).orElseThrow().getQuantity()).isEqualTo(7);
+        assertThat(purchaseOrderRepository.findById(purchaseOrderId).orElseThrow().getVersion())
+                .isPositive();
 
         assertThat(inventoryMovementRepository.findByProductIdOrderByCreatedAtDesc(productId))
                 .singleElement()
@@ -183,6 +193,8 @@ class PurchaseOrderWorkflowIntegrationTest {
                 .andExpect(jsonPath("$.status").value("REFUNDED"));
 
         assertThat(productRepository.findById(productId).orElseThrow().getQuantity()).isEqualTo(7);
+        assertThat(salesOrderRepository.findById(salesOrderId).orElseThrow().getVersion())
+                .isPositive();
 
         mockMvc.perform(post("/api/ledger/adjustments")
                         .header("Authorization", bearer(token))

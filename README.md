@@ -104,6 +104,7 @@ Når en viktig handling skjer, for eksempel at en innkjøpsordre mottas eller en
 - Innkjøpsordre med mottak
 - Salgsordre med betaling og shipping
 - Ledger for innkjøpskostnader og salgsinntekter
+- Optimistisk låsing som beskytter lager- og ordreflyter mot samtidige endringer
 - Audit log
 - Brukere med unik e-post og BCrypt-hashet passord
 - Swagger/OpenAPI

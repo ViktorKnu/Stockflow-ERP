@@ -12,6 +12,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -48,6 +49,10 @@ public class SalesOrder {
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal totalAmount;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     @OneToMany(mappedBy = "salesOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

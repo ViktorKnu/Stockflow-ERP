@@ -3,6 +3,7 @@ package com.stockflow.exception;
 import com.stockflow.config.CorrelationIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -24,6 +25,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiError> handleDuplicate(DuplicateResourceException ex, HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, ApiErrorCode.DUPLICATE_RESOURCE, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiError> handleOptimisticLockingFailure(
+            OptimisticLockingFailureException ex,
+            HttpServletRequest request) {
+        return build(
+                HttpStatus.CONFLICT,
+                ApiErrorCode.CONCURRENT_MODIFICATION,
+                "The resource was changed by another request. Reload it and try again",
+                request
+        );
     }
 
     @ExceptionHandler(BusinessRuleException.class)
