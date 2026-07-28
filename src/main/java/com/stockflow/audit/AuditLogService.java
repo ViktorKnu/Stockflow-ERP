@@ -1,15 +1,16 @@
 package com.stockflow.audit;
 
 import com.stockflow.audit.dto.AuditLogResponse;
+import com.stockflow.common.dto.PageResponse;
 import com.stockflow.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,10 +21,11 @@ public class AuditLogService {
     private final AuditLogRepository auditLogRepository;
 
     @Transactional(readOnly = true)
-    public List<AuditLogResponse> findAll() {
-        return auditLogRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(AuditLogMapper::toResponse)
-                .toList();
+    public PageResponse<AuditLogResponse> findAll(int page, int size) {
+        return PageResponse.from(
+                auditLogRepository.findAll(pageRequest(page, size)),
+                AuditLogMapper::toResponse
+        );
     }
 
     @Transactional(readOnly = true)
@@ -33,10 +35,13 @@ public class AuditLogService {
     }
 
     @Transactional(readOnly = true)
-    public List<AuditLogResponse> findByEntity(String entityType, Long entityId) {
-        return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId).stream()
-                .map(AuditLogMapper::toResponse)
-                .toList();
+    public PageResponse<AuditLogResponse> findByEntity(
+            String entityType, Long entityId, int page, int size) {
+        return PageResponse.from(
+                auditLogRepository.findByEntityTypeAndEntityId(
+                        entityType, entityId, pageRequest(page, size)),
+                AuditLogMapper::toResponse
+        );
     }
 
     @Transactional
@@ -60,5 +65,14 @@ public class AuditLogService {
             return SYSTEM_ACTOR;
         }
         return authentication.getName();
+    }
+
+    private PageRequest pageRequest(int page, int size) {
+        return PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+                        .and(Sort.by(Sort.Direction.DESC, "id"))
+        );
     }
 }

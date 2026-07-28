@@ -232,7 +232,7 @@
           "name": "List product inventory movements",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/inventory/movements/product/{{productId}}"
+            "url": "{{baseUrl}}/api/inventory/movements/product/{{productId}}?page=0&size=50"
           }
         },
         {
@@ -510,7 +510,7 @@
           "name": "List ledger transactions",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/ledger/transactions"
+            "url": "{{baseUrl}}/api/ledger/transactions?page=0&size=50"
           }
         },
         {
@@ -531,21 +531,21 @@
           "name": "List audit logs",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/audit-logs"
+            "url": "{{baseUrl}}/api/audit-logs?page=0&size=50"
           }
         },
         {
           "name": "Get purchase order audit logs",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/audit-logs/entity/PurchaseOrder/{{purchaseOrderId}}"
+            "url": "{{baseUrl}}/api/audit-logs/entity/PurchaseOrder/{{purchaseOrderId}}?page=0&size=50"
           }
         },
         {
           "name": "Get sales order audit logs",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/audit-logs/entity/SalesOrder/{{salesOrderId}}"
+            "url": "{{baseUrl}}/api/audit-logs/entity/SalesOrder/{{salesOrderId}}?page=0&size=50"
           }
         }
       ]

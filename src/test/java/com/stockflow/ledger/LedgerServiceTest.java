@@ -11,6 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -62,6 +64,19 @@ class LedgerServiceTest {
                 1L,
                 "Ledger transaction EXPENSE recorded for PURCHASE_ORDER 10"
         );
+    }
+
+    @Test
+    void listsTransactionsAsBoundedPage() {
+        when(ledgerTransactionRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(
+                        transaction(LedgerTransactionType.REVENUE, "100.00"))));
+
+        var response = ledgerService.findAll(0, 50);
+
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().getFirst().type()).isEqualTo(LedgerTransactionType.REVENUE);
+        assertThat(response.totalElements()).isEqualTo(1);
     }
 
     @Test

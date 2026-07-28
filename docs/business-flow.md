@@ -112,3 +112,7 @@ Eksempler:
 - `LEDGER_TRANSACTION_CREATED`
 
 Audit log er read-only fra API-et. Den opprettes av systemet når noe viktig skjer.
+
+Historikkendepunktene for audit-logg, ledger og lagerbevegelser er paginerte og sorteres
+med nyeste hendelse først. Dette hindrer at hele historikken lastes i minnet etter hvert
+som datamengden vokser.

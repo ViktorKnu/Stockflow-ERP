@@ -250,6 +250,7 @@ Lager:
 ```text
 POST /api/inventory/movements
 GET  /api/inventory/movements
+GET  /api/inventory/movements?page=0&size=50
 GET  /api/inventory/movements/{id}
 GET  /api/inventory/movements/product/{productId}
 ```
@@ -283,6 +284,7 @@ Ledger:
 
 ```text
 GET /api/ledger/transactions
+GET /api/ledger/transactions?page=0&size=50
 GET /api/ledger/transactions/{id}
 POST /api/ledger/adjustments
 GET /api/ledger/summary
@@ -294,9 +296,14 @@ Audit logs:
 
 ```text
 GET /api/audit-logs
+GET /api/audit-logs?page=0&size=50
 GET /api/audit-logs/{id}
 GET /api/audit-logs/entity/{entityType}/{entityId}
 ```
+
+Historikklistene for lagerbevegelser, ledger og audit-logg er paginerte. `page` starter på
+`0`, `size` er som standard `50`, og maksimal sidestørrelse er `200`. Responsen inneholder
+`content`, `page`, `size`, `totalElements`, `totalPages`, `first` og `last`.
 
 Brukere:
 

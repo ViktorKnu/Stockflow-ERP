@@ -159,8 +159,10 @@ class PurchaseOrderWorkflowIntegrationTest {
         mockMvc.perform(get("/api/ledger/transactions")
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].amount").value(62.5))
-                .andExpect(jsonPath("$[0].sourceId").value(purchaseOrderId));
+                .andExpect(jsonPath("$.content[0].amount").value(62.5))
+                .andExpect(jsonPath("$.content[0].sourceId").value(purchaseOrderId))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(50));
 
         long salesOrderId = createSalesOrder(token);
 

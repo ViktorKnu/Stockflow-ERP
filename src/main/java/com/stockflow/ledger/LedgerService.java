@@ -2,6 +2,7 @@ package com.stockflow.ledger;
 
 import com.stockflow.audit.AuditAction;
 import com.stockflow.audit.AuditLogService;
+import com.stockflow.common.dto.PageResponse;
 import com.stockflow.exception.ApiErrorCode;
 import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ResourceNotFoundException;
@@ -10,6 +11,8 @@ import com.stockflow.ledger.dto.LedgerSummaryResponse;
 import com.stockflow.ledger.dto.LedgerTransactionResponse;
 import com.stockflow.ledger.dto.MonthlyLedgerSummaryResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,10 +34,16 @@ public class LedgerService {
     private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
-    public List<LedgerTransactionResponse> findAll() {
-        return ledgerTransactionRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(LedgerTransactionMapper::toResponse)
-                .toList();
+    public PageResponse<LedgerTransactionResponse> findAll(int page, int size) {
+        return PageResponse.from(
+                ledgerTransactionRepository.findAll(
+                        PageRequest.of(
+                                page,
+                                size,
+                                Sort.by(Sort.Direction.DESC, "createdAt")
+                                        .and(Sort.by(Sort.Direction.DESC, "id")))),
+                LedgerTransactionMapper::toResponse
+        );
     }
 
     @Transactional(readOnly = true)

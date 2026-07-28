@@ -70,6 +70,18 @@ Gyldige klient-ID-er kan inneholde bokstaver, tall, punktum, understrek, kolon o
 og kan være opptil 128 tegn. Manglende eller ugyldige verdier erstattes med en UUID. ID-en
 ligger også i feilresponsens `correlationId`-felt og i applikasjonsloggen.
 
+## Paginering av historikk
+
+Lagerbevegelser, ledger-transaksjoner og audit-logger returneres sidevis. Eksempel:
+
+```text
+GET /api/ledger/transactions?page=0&size=50
+```
+
+`page` starter på `0`, standard `size` er `50`, og maksimal verdi er `200`. Selve radene
+ligger i responsens `content`-felt. Responsen oppgir også `totalElements`, `totalPages`,
+`first` og `last`.
+
 ## 1. Lag en leverandør
 
 Bruk:

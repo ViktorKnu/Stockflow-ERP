@@ -1,5 +1,6 @@
 package com.stockflow.ledger;
 
+import com.stockflow.common.dto.PageResponse;
 import com.stockflow.ledger.dto.LedgerSummaryResponse;
 import com.stockflow.ledger.dto.LedgerAdjustmentCreateRequest;
 import com.stockflow.ledger.dto.LedgerTransactionResponse;
@@ -32,8 +33,10 @@ public class LedgerController {
 
     @GetMapping("/transactions")
     @Operation(summary = "List ledger transactions")
-    public List<LedgerTransactionResponse> findAllTransactions() {
-        return ledgerService.findAll();
+    public PageResponse<LedgerTransactionResponse> findAllTransactions(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size) {
+        return ledgerService.findAll(page, size);
     }
 
     @GetMapping("/transactions/{id}")

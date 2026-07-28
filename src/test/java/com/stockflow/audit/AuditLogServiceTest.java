@@ -7,9 +7,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,14 +54,21 @@ class AuditLogServiceTest {
     @Test
     void canFindAuditLogsForEntity() {
         AuditLog auditLog = auditLog();
-        when(auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc("Product", 5L))
-                .thenReturn(List.of(auditLog));
+        PageRequest pageable = PageRequest.of(
+                0,
+                25,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+                        .and(Sort.by(Sort.Direction.DESC, "id"))
+        );
+        when(auditLogRepository.findByEntityTypeAndEntityId("Product", 5L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(auditLog), PageRequest.of(0, 25), 1));
 
-        List<AuditLogResponse> response = auditLogService.findByEntity("Product", 5L);
+        var response = auditLogService.findByEntity("Product", 5L, 0, 25);
 
-        assertThat(response).hasSize(1);
-        assertThat(response.getFirst().entityType()).isEqualTo("Product");
-        assertThat(response.getFirst().entityId()).isEqualTo(5L);
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().getFirst().entityType()).isEqualTo("Product");
+        assertThat(response.content().getFirst().entityId()).isEqualTo(5L);
+        assertThat(response.totalElements()).isEqualTo(1);
     }
 
     @Test

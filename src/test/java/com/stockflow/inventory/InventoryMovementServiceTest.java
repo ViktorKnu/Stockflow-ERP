@@ -13,6 +13,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -141,6 +143,27 @@ class InventoryMovementServiceTest {
         InventoryMovement movement = movementCaptor.getValue();
         assertThat(movement.getPreviousQuantity()).isEqualTo(8);
         assertThat(movement.getNewQuantity()).isEqualTo(10);
+    }
+
+    @Test
+    void listsMovementsAsBoundedPage() {
+        InventoryMovement movement = InventoryMovement.builder()
+                .id(10L)
+                .product(product(8))
+                .type(MovementType.IN)
+                .quantity(2)
+                .reason("Restock")
+                .previousQuantity(6)
+                .newQuantity(8)
+                .build();
+        when(movementRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(java.util.List.of(movement)));
+
+        var response = movementService.findAll(0, 50);
+
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().getFirst().id()).isEqualTo(10L);
+        assertThat(response.totalElements()).isEqualTo(1);
     }
 
     private Product product(int quantity) {

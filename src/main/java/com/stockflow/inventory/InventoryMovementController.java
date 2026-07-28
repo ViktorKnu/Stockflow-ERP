@@ -2,8 +2,11 @@ package com.stockflow.inventory;
 
 import com.stockflow.inventory.dto.InventoryMovementCreateRequest;
 import com.stockflow.inventory.dto.InventoryMovementResponse;
+import com.stockflow.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,14 +14,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
 @RequestMapping("/api/inventory/movements")
 @RequiredArgsConstructor
+@Validated
 public class InventoryMovementController {
 
     private final InventoryMovementService movementService;
@@ -32,8 +36,10 @@ public class InventoryMovementController {
 
     @GetMapping
     @Operation(summary = "List inventory movements")
-    public List<InventoryMovementResponse> findAll() {
-        return movementService.findAll();
+    public PageResponse<InventoryMovementResponse> findAll(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size) {
+        return movementService.findAll(page, size);
     }
 
     @GetMapping("/{id}")
@@ -44,7 +50,10 @@ public class InventoryMovementController {
 
     @GetMapping("/product/{productId}")
     @Operation(summary = "List inventory movements for product")
-    public List<InventoryMovementResponse> findByProduct(@PathVariable Long productId) {
-        return movementService.findByProduct(productId);
+    public PageResponse<InventoryMovementResponse> findByProduct(
+            @PathVariable Long productId,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size) {
+        return movementService.findByProduct(productId, page, size);
     }
 }

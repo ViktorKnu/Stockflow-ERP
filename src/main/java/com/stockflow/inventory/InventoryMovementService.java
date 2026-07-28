@@ -2,6 +2,7 @@ package com.stockflow.inventory;
 
 import com.stockflow.audit.AuditAction;
 import com.stockflow.audit.AuditLogService;
+import com.stockflow.common.dto.PageResponse;
 import com.stockflow.exception.BusinessRuleException;
 import com.stockflow.exception.ApiErrorCode;
 import com.stockflow.exception.ResourceNotFoundException;
@@ -11,9 +12,9 @@ import com.stockflow.product.Product;
 import com.stockflow.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -59,10 +60,11 @@ public class InventoryMovementService {
     }
 
     @Transactional(readOnly = true)
-    public List<InventoryMovementResponse> findAll() {
-        return movementRepository.findAll().stream()
-                .map(InventoryMovementMapper::toResponse)
-                .toList();
+    public PageResponse<InventoryMovementResponse> findAll(int page, int size) {
+        return PageResponse.from(
+                movementRepository.findAll(pageRequest(page, size)),
+                InventoryMovementMapper::toResponse
+        );
     }
 
     @Transactional(readOnly = true)
@@ -72,14 +74,15 @@ public class InventoryMovementService {
     }
 
     @Transactional(readOnly = true)
-    public List<InventoryMovementResponse> findByProduct(Long productId) {
+    public PageResponse<InventoryMovementResponse> findByProduct(Long productId, int page, int size) {
         if (!productRepository.existsById(productId)) {
             throw new ResourceNotFoundException("Product not found: " + productId);
         }
 
-        return movementRepository.findByProductIdOrderByCreatedAtDesc(productId).stream()
-                .map(InventoryMovementMapper::toResponse)
-                .toList();
+        return PageResponse.from(
+                movementRepository.findByProductId(productId, pageRequest(page, size)),
+                InventoryMovementMapper::toResponse
+        );
     }
 
     private Integer calculateNewQuantity(Integer previousQuantity, MovementType type, Integer quantity) {
@@ -102,5 +105,14 @@ public class InventoryMovementService {
             }
             case ADJUSTMENT -> quantity;
         };
+    }
+
+    private PageRequest pageRequest(int page, int size) {
+        return PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+                        .and(Sort.by(Sort.Direction.DESC, "id"))
+        );
     }
 }
